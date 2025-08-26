@@ -14,8 +14,8 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/dashboard/Header";
 import Footer from "@/components/dashboard/Footer";
+import NewTemplates from "@/components/dashboard/Newtemplates";
 
-import Certificates from "@/components/dashboard/certificates";
 import Aicreative from "@/components/dashboard/aicreative";
 import Usernameheader from "@/components/dashboard/usernameheader"; // Import your new component
 
@@ -165,11 +165,9 @@ export default function DashboardPage() {
         </div>
       </section>
 
-   
-      {/* --- Certificates --- */}
-      <div className="mt-8">
-        <Certificates/>
-      </div>
+      {/* --- Newest Templates --- */}
+      <NewTemplates />
+
 
       {/* --- AI Creative --- */}
       <div className="mt-8">
