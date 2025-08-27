@@ -1,11 +1,17 @@
+// lib/dbConnect.ts
 import mongoose, { Mongoose } from 'mongoose';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error(
-    'Please define the MONGODB_URI environment variable inside .env.local'
-  );
+  // During build time, we don't need a real database connection
+  if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
+    console.warn('MONGODB_URI not defined. Using placeholder for build.');
+  } else {
+    throw new Error(
+      'Please define the MONGODB_URI environment variable inside .env.local'
+    );
+  }
 }
 
 declare global {
@@ -20,6 +26,12 @@ if (!global.mongoose) {
 }
 
 async function dbConnect() {
+  // If no MONGODB_URI is available (e.g., during build), return a mock connection
+  if (!MONGODB_URI) {
+    console.warn('No MONGODB_URI available, returning mock connection for build');
+    return null;
+  }
+
   const cached = global.mongoose;
 
   if (cached.conn) {
@@ -30,7 +42,7 @@ async function dbConnect() {
     const opts = {
       bufferCommands: false,
     };
-    cached.promise = mongoose.connect(MONGODB_URI!, opts);
+    cached.promise = mongoose.connect(MONGODB_URI, opts);
   }
   cached.conn = await cached.promise;
   return cached.conn;
