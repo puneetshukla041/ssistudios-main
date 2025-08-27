@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Header from "@/components/dashboard/Header";
 import {
   Settings,
   X,
@@ -14,6 +15,16 @@ import {
 } from 'lucide-react'
 
 // --- HELPER FUNCTIONS ---
+/**
+ * Draws a rounded rectangle path. Used for clipping and drawing borders.
+ * @param ctx The canvas rendering context.
+ * @param x The x-coordinate of the top-left corner.
+ * @param y The y-coordinate of the top-left corner.
+ * @param width The width of the rectangle.
+ * @param height The height of the rectangle.
+ * @param radius The radius of the corners.
+ * @param lineWidth The line width for the border.
+ */
 function drawRoundedRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -39,6 +50,15 @@ function drawRoundedRect(
   ctx.stroke()
 }
 
+/**
+ * Clips the canvas context to a rounded rectangle shape.
+ * @param ctx The canvas rendering context.
+ * @param x The x-coordinate of the top-left corner.
+ * @param y The y-coordinate of the top-left corner.
+ * @param width The width of the rectangle.
+ * @param height The height of the rectangle.
+ * @param radius The radius of the corners.
+ */
 function clipRoundedRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -61,6 +81,15 @@ function clipRoundedRect(
   ctx.clip()
 }
 
+/**
+ * Fills a rounded rectangle on the canvas.
+ * @param ctx The canvas rendering context.
+ * @param x The x-coordinate of the top-left corner.
+ * @param y The y-coordinate of the top-left corner.
+ * @param width The width of the rectangle.
+ * @param height The height of the rectangle.
+ * @param radius The radius of the corners.
+ */
 function fillRoundedRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -99,6 +128,12 @@ function writeUInt32BE(buf: Uint8Array, offset: number, value: number) {
   buf[offset + 3] = value & 0xff
 }
 
+/**
+ * Sets the DPI metadata in a PNG data URL.
+ * @param dataUrl The PNG image data URL.
+ * @param dpi The DPI value to set.
+ * @returns The new data URL with DPI information.
+ */
 function setPngDpi(dataUrl: string, dpi: number) {
   if (!dataUrl.startsWith('data:image/png;base64,')) return dataUrl
   const base64 = dataUrl.split(',')[1]
@@ -181,6 +216,12 @@ function setPngDpi(dataUrl: string, dpi: number) {
 /** ============== END PNG DPI WRITER ============== */
 
 /** ========= JPEG DPI WRITER ========= */
+/**
+ * Sets the DPI metadata in a JPEG data URL.
+ * @param dataUrl The JPEG image data URL.
+ * @param dpi The DPI value to set.
+ * @returns The new data URL with DPI information.
+ */
 function setJpegDpi(dataUrl: string, dpi: number) {
   if (!dataUrl.startsWith('data:image/jpeg;base64,')) return dataUrl
 
@@ -325,6 +366,9 @@ export default function PosterEditor() {
   const previewWidth = 1920
   const previewHeight = 1080
 
+  /**
+   * Resets all logo transformation and export settings to their default values.
+   */
   const resetAllSettings = () => {
     setLogoZoom(100);
     setLogoOpacity(100);
@@ -346,6 +390,7 @@ export default function PosterEditor() {
     });
   }
 
+  // Effect to load the base image when the source URL changes.
   useEffect(() => {
     if (!baseImageSrc) return setBaseImage(null)
     const img = new Image()
@@ -355,6 +400,7 @@ export default function PosterEditor() {
     img.onerror = (e) => console.error("Failed to load base image:", e);
   }, [baseImageSrc])
 
+  // Effect to load the logo image when the source URL changes.
   useEffect(() => {
     if (!logoImageSrc) return setLogoImage(null)
     const img = new Image()
@@ -367,6 +413,10 @@ export default function PosterEditor() {
     }
   }, [logoImageSrc])
 
+  /**
+   * Draws the logo with its current transformations onto a hidden canvas for preview.
+   * This is then used by the main canvas to composite the final image.
+   */
   const drawLogoPreview = useCallback(() => {
     const canvas = logoPreviewCanvasRef.current
     if (!canvas || !logoImage) {
@@ -436,10 +486,12 @@ export default function PosterEditor() {
     }
   }, [logoImage, logoZoom, logoOpacity, logoRadius, logoBorderWidth, logoBorderColor])
 
+  // Effect to re-draw the logo preview whenever its settings change.
   useEffect(() => {
     drawLogoPreview()
   }, [drawLogoPreview])
 
+  // Effect to draw the combined poster preview on the main canvas.
   useEffect(() => {
     const canvas = combinedCanvasRef.current
     if (!canvas) return
@@ -497,6 +549,10 @@ export default function PosterEditor() {
     logoPlateHorizontalPadding, logoPlateVerticalPadding, logoPlateRadius
   ])
 
+  /**
+   * Handles a logo file upload from the user.
+   * @param e The file input change event.
+   */
   function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -588,6 +644,9 @@ export default function PosterEditor() {
     }
   };
 
+  /**
+   * Executes the image export process based on the user's settings.
+   */
   async function executeExport() {
     if (!baseImage || !logoImage || !logoPreviewCanvasRef.current) return
     setGenerating(true)
@@ -802,23 +861,29 @@ export default function PosterEditor() {
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 h-16 flex items-center justify-between px-6 bg-transparent border-b border-zinc-700/30 shadow-sm z-20">
 
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold tracking-tight text-zinc-100">
-            SSISTUDIOS POSTER EDITOR
-          </h1>
-        </div>
+<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+  <div>
+    <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+      SSI Studios
+    </h1>
+    <p className="text-sm md:text-base text-zinc-400 font-medium">
+      Create. Customize. Inspire.
+    </p>
+  </div>
+</div>
+
         <div className="flex items-center gap-4">
           <button
             onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
             className="text-zinc-400 hover:text-blue-500 transition-colors cursor-pointer"
-            aria-label="Toggle left sidebar"
+            aria-label="Toggle editing tools"
           >
             <LayoutPanelLeft size={20} />
           </button>
           <button
             onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
             className="text-zinc-400 hover:text-blue-500 transition-colors cursor-pointer"
-            aria-label="Toggle right sidebar"
+            aria-label="Toggle visual settings"
           >
             <Settings size={20} />
           </button>
@@ -830,14 +895,14 @@ export default function PosterEditor() {
         {/* Left Sidebar */}
         <AnimatePresence>
           {isLeftSidebarOpen && (
-            <motion.aside
-              initial={{ x: -320 }}
-              animate={{ x: 0 }}
-              exit={{ x: -320 }}
-              transition={{ type: "tween", duration: 0.2 }}
-              className="absolute lg:relative left-0 top-16 bottom-0 w-80 bg-transparent border-r border-zinc-700/30 flex flex-col p-6 z-10 overflow-y-auto custom-scrollbar"
+<motion.aside
+  initial={{ x: -320 }}
+  animate={{ x: 0 }}
+  exit={{ x: -320 }}
+  transition={{ type: "tween", duration: 0.2 }}
+  className="absolute lg:relative left-0 top-0 bottom-0 w-80 bg-transparent border-r border-zinc-700/30 flex flex-col p-6 z-10 overflow-y-auto custom-scrollbar"
+>
 
-            >
               <button
                 className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-red-500 lg:hidden cursor-pointer"
                 onClick={() => setIsLeftSidebarOpen(false)}
@@ -846,9 +911,9 @@ export default function PosterEditor() {
                 <X size={20} />
               </button>
               <div className="flex flex-col gap-8 pt-4">
-                <Section title="Logo Properties">
+                <Section title="Logo Tweaks">
                   <InputGroup
-                    label="Scale"
+                    label="Size"
                     value={logoZoom}
                     unit="%"
                     onReset={() => setLogoZoom(100)}
@@ -857,7 +922,7 @@ export default function PosterEditor() {
                     <input type="range" min="10" max="200" value={logoZoom} onChange={(e) => setLogoZoom(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
                   </InputGroup>
                   <InputGroup
-                    label="Opacity"
+                    label="Transparency"
                     value={logoOpacity}
                     unit="%"
                     onReset={() => setLogoOpacity(100)}
@@ -866,7 +931,7 @@ export default function PosterEditor() {
                     <input type="range" min="0" max="100" value={logoOpacity} onChange={(e) => setLogoOpacity(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
                   </InputGroup>
                   <InputGroup
-                    label="Corner Radius"
+                    label="Rounded Corners"
                     value={logoRadius}
                     unit="px"
                     onReset={() => setLogoRadius(0)}
@@ -876,21 +941,21 @@ export default function PosterEditor() {
                   </InputGroup>
                 </Section>
                 <div className="w-full h-px bg-zinc-700/50" />
-                <Section title="Tools">
+                <Section title="Ready to Go?">
                   <div className="flex flex-col gap-3">
                     <button
                       onClick={() => { fileInputRef.current?.click() }}
                       disabled={uploading}
                       className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md"
                     >
-                      <PlusCircle size={16} /> Upload Logo
+                      <PlusCircle size={16} /> Add Your Logo
                     </button>
                     <button
                       onClick={handleGenerateClick}
                       disabled={!logoImage || generating}
                       className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
                     >
-                      <Download size={16} /> Export
+                      <Download size={16} /> Get Your Masterpiece
                     </button>
                     <input ref={fileInputRef} type="file" onChange={handleLogoUpload} accept="image/*" className="hidden" />
                   </div>
@@ -901,7 +966,7 @@ export default function PosterEditor() {
                         onClick={resetAllSettings}
                         className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md"
                     >
-                        <RotateCcw size={16} /> Reset All
+                        <RotateCcw size={16} /> Start Over
                     </button>
                 </Section>
               </div>
@@ -909,44 +974,50 @@ export default function PosterEditor() {
           )}
         </AnimatePresence>
 
-        {/* Central Preview Area */}
-        <div className="flex-1 flex items-center justify-center p-8 bg-[#161719] relative">
-          {!baseImage && (
-            <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-lg font-light">
-              Loading base image...
-            </div>
-          )}
-          <div className="relative w-full h-full max-w-[1280px] max-h-[720px] shadow-2xl rounded-xl overflow-hidden flex items-center justify-center bg-[#25262c] border-2 border-zinc-700/50">
-            <canvas
-              ref={combinedCanvasRef}
-              className="w-full h-full object-contain"
-            />
-            {(!logoImage) && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 text-lg font-light border-2 border-dashed border-zinc-600 rounded-xl">
-                <PlusCircle size={48} className="text-zinc-600 mb-2" />
-                Upload a logo to begin
-              </div>
-            )}
-            <canvas ref={logoPreviewCanvasRef} className="hidden" />
-            <AnimatePresence>
-                {(baseImage && logoImage) && (
-                  <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 20 }}
-                      className="absolute bottom-4 right-4"
-                  >
-                      <button
-                          onClick={handleFullscreenClick}
-                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition-colors cursor-pointer shadow-md"
-                      >
-                          View in Fullscreen
-                      </button>
-                  </motion.div>
-                )}
-            </AnimatePresence>
-          </div>
-        </div>
+{/* Central Preview Area */}
+<div className="flex-1 flex items-center justify-center p-8 bg-[#161719] relative">
+  {!baseImage && (
+    <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-lg font-light">
+      Flipping on the lights...
+    </div>
+  )}
+
+  {/* 16:9 Ratio Container */}
+  <div className="relative w-full max-w-[1280px] aspect-[16/9] shadow-2xl rounded-xl overflow-hidden flex items-center justify-center bg-[#25262c] border-2 border-zinc-700/50">
+    <canvas
+      ref={combinedCanvasRef}
+      className="w-full h-full object-contain"
+    />
+
+    {(!logoImage) && (
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 text-lg font-light border-2 border-dashed border-zinc-600 rounded-xl">
+        <PlusCircle size={48} className="text-zinc-600 mb-2" />
+        It's a blank canvas! Add a logo to get started.
+      </div>
+    )}
+
+    <canvas ref={logoPreviewCanvasRef} className="hidden" />
+
+    <AnimatePresence>
+      {(baseImage && logoImage) && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          className="absolute bottom-4 right-4"
+        >
+          <button
+            onClick={handleFullscreenClick}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition-colors cursor-pointer shadow-md"
+          >
+            See the Big Picture
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+</div>
+
 
         {/* Right Sidebar */}
         <AnimatePresence>
@@ -968,7 +1039,7 @@ export default function PosterEditor() {
               </button>
               <div className="flex flex-col gap-8 pt-4">
 
-                <Section title="Position">
+                <Section title="Placement">
                   <InputGroup
                     label="Horizontal"
                     value={logoHorizontalOffset}
@@ -989,10 +1060,10 @@ export default function PosterEditor() {
                   </InputGroup>
                 </Section>
                 <div className="w-full h-px bg-zinc-700/50" />
-                <Section title="Effects">
+                <Section title="Visual Flourishes">
                   <div>
                     <div className="flex items-center justify-between text-zinc-400 text-xs font-medium mb-1">
-                      <span>Blend Mode</span>
+                      <span>Blend Style</span>
                       <ResetButton onReset={() => setLogoBlendMode('source-over')} isDefault={logoBlendMode === 'source-over'} />
                     </div>
                     <select
@@ -1009,7 +1080,7 @@ export default function PosterEditor() {
                     </select>
                   </div>
                   <InputGroup
-                    label="Border"
+                    label="Outline"
                     value={logoBorderWidth}
                     unit="px"
                     onReset={() => setLogoBorderWidth(0)}
@@ -1017,13 +1088,13 @@ export default function PosterEditor() {
                   >
                     <input type="range" min="0" max="20" value={logoBorderWidth} onChange={(e) => setLogoBorderWidth(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
                     <div className="flex items-center justify-between text-zinc-400 text-xs font-medium mt-2">
-                      <span>Border Color</span>
+                      <span>Outline Color</span>
                       <input type="color" value={logoBorderColor} onChange={(e) => setLogoBorderColor(e.target.value)} disabled={!logoImage || logoBorderWidth === 0} className="w-6 h-6 rounded-md border-none cursor-pointer" />
                     </div>
                   </InputGroup>
                 </Section>
                 <div className="w-full h-px bg-zinc-700/50" />
-                <Section title="Background Plate">
+                <Section title="Logo Backdrop">
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
                       <span>Background Type</span>
@@ -1056,7 +1127,7 @@ export default function PosterEditor() {
                     </div>
                   </div>
                   <InputGroup
-                    label="Plate Radius"
+                    label="Plate Curvature"
                     value={logoPlateRadius}
                     unit="px"
                     onReset={() => setLogoPlateRadius(0)}
@@ -1065,7 +1136,7 @@ export default function PosterEditor() {
                     <input type="range" min="0" max="50" value={logoPlateRadius} onChange={(e) => setLogoPlateRadius(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage || backgroundType !== 'white'} />
                   </InputGroup>
                   <InputGroup
-                    label="H-Padding"
+                    label="Horizontal Padding"
                     value={logoPlateHorizontalPadding}
                     unit="%"
                     onReset={() => setLogoPlateHorizontalPadding(15)}
@@ -1074,7 +1145,7 @@ export default function PosterEditor() {
                     <input type="range" min="0" max="100" value={logoPlateHorizontalPadding} onChange={(e) => setLogoPlateHorizontalPadding(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage || backgroundType !== 'white'} />
                   </InputGroup>
                   <InputGroup
-                    label="V-Padding"
+                    label="Vertical Padding"
                     value={logoPlateVerticalPadding}
                     unit="%"
                     onReset={() => setLogoPlateVerticalPadding(15)}
@@ -1104,7 +1175,7 @@ export default function PosterEditor() {
                 className="bg-[#1f2024] rounded-lg p-8 w-96 max-w-full shadow-lg border border-zinc-700/50 flex flex-col gap-6"
               >
                 <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-zinc-100">Export Image</h2>
+                  <h2 className="text-2xl font-bold text-zinc-100">Download Your Poster</h2>
                   <button onClick={() => setShowExportModal(false)} className="text-zinc-400 hover:text-red-500 transition-colors cursor-pointer">
                     <X size={24} />
                   </button>
@@ -1220,31 +1291,31 @@ export default function PosterEditor() {
                                     repeatType: 'loop',
                                 }}
                             />
+                            <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-sm text-zinc-200">
+                               {Math.round(0)}%
+                            </span>
                         </svg>
-                        <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-sm text-zinc-200">
-                           {Math.round(0)}%
-                        </span>
                     </div>
                 )}
                 {exportStatus === 'complete' && (
-                     <div className="w-20 h-20 flex items-center justify-center">
-                        <svg className="w-full h-full text-green-500" viewBox="0 0 52 52">
-                            <circle cx="26" cy="26" r="25" fill="none" stroke="currentColor" strokeWidth="3" />
-                            <motion.path
-                                className="checkmark-animation"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="3"
-                                d="M14.1 27.2l7.1 7.2 16.7-16.8"
-                                initial={{ strokeDashoffset: 100 }}
-                                animate={{ strokeDashoffset: 0 }}
-                                transition={{ duration: 0.6 }}
-                            />
-                        </svg>
-                    </div>
+                       <div className="w-20 h-20 flex items-center justify-center">
+                         <svg className="w-full h-full text-green-500" viewBox="0 0 52 52">
+                             <circle cx="26" cy="26" r="25" fill="none" stroke="currentColor" strokeWidth="3" />
+                             <motion.path
+                                 className="checkmark-animation"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 strokeWidth="3"
+                                 d="M14.1 27.2l7.1 7.2 16.7-16.8"
+                                 initial={{ strokeDashoffset: 100 }}
+                                 animate={{ strokeDashoffset: 0 }}
+                                 transition={{ duration: 0.6 }}
+                             />
+                         </svg>
+                       </div>
                 )}
                 <span className="mt-4 text-sm font-light text-zinc-200">
-                  {exportStatus === 'loading' ? 'Generating image...' : 'Download Complete!'}
+                  {exportStatus === 'loading' ? 'Whipping up your poster...' : 'Your poster is ready! 🎉'}
                 </span>
             </motion.div>
         )}
