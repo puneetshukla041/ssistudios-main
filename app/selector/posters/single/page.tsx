@@ -15,33 +15,39 @@ export default function LoadingPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2000);
+    }, 500);
     return () => clearTimeout(timer);
   }, []);
 
-  // --- Handle Redirect Progress Bar ---
-  useEffect(() => {
-    if (isRedirecting) {
-      setProgress(0);
-      const interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            return 100;
-          }
-          return prev + 2;
-        });
-      }, 80); // ~4s total
-      return () => clearInterval(interval);
-    }
-  }, [isRedirecting]);
+// --- Handle Redirect Progress Bar ---
+useEffect(() => {
+  if (isRedirecting) {
+    setProgress(0);
+    const duration = 1500; // total duration in ms
+    const intervalTime = 15; // ms per update
+    const increment = 100 / (duration / intervalTime); // amount to increase per tick
 
-  const handleUseTemplate = () => {
-    setIsRedirecting(true);
-    setTimeout(() => {
-      router.push("/poster/editor/singlelogo/poster1editor");
-    }, 4000);
-  };
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        return prev + increment;
+      });
+    }, intervalTime);
+
+    return () => clearInterval(interval);
+  }
+}, [isRedirecting]);
+
+const handleUseTemplate = () => {
+  setIsRedirecting(true);
+  setTimeout(() => {
+    router.push("/poster/editor/singlelogo/poster1editor");
+  }, 1500); // redirect after 1.5s
+};
+
 
   return (
     <main className="relative min-h-screen flex flex-col items-center p-4 bg-transparent text-white font-sans overflow-hidden">

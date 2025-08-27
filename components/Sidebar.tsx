@@ -34,8 +34,8 @@ const menu: MenuItem[] = [
     name: 'Posters',
     icon: Layout,
     children: [
-      { name: 'Single Logo Editor', path: '/selector/posters' },
-      { name: 'Multiple Logos Editor', path: '/poster/multiple-logo-editor' },
+      { name: 'Single Logo Editor', path: '/selector/posters/single' },
+      { name: 'Multiple Logos Editor', path: '/selector/posters/multiple' },
     ],
   },
   {

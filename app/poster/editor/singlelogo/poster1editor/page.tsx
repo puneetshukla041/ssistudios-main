@@ -367,6 +367,23 @@ export default function PosterEditor() {
   const previewHeight = 1080
 
   /**
+   * NEW: ultra-smooth slider updates via rAF + onInput
+   */
+  const rafRef = useRef<number | null>(null);
+  const makeSmoothRangeHandler = useCallback(
+    (setter: (n: number) => void) => (e: React.ChangeEvent<HTMLInputElement> | React.FormEvent<HTMLInputElement>) => {
+      const target = e.target as HTMLInputElement;
+      const next = Number(target.value);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() => {
+        setter(next);
+      });
+    },
+    []
+  );
+  useEffect(() => () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); }, []);
+
+  /**
    * Resets all logo transformation and export settings to their default values.
    */
   const resetAllSettings = () => {
@@ -586,11 +603,11 @@ export default function PosterEditor() {
     // Create a new canvas with the original image's dimensions
     const originalWidth = baseImage.naturalWidth || baseImage.width;
     const originalHeight = baseImage.naturalHeight || baseImage.height;
-    
+   
     const exportCanvas = document.createElement('canvas');
     const ctx = exportCanvas.getContext('2d');
     if (!ctx) return;
-    
+   
     exportCanvas.width = originalWidth;
     exportCanvas.height = originalHeight;
     ctx.imageSmoothingEnabled = true;
@@ -652,7 +669,7 @@ export default function PosterEditor() {
     setGenerating(true)
     setExportStatus('loading');
     setShowExportModal(false)
-    
+   
     // Simulate processing time
     await new Promise((r) => setTimeout(r, 1500))
 
@@ -791,7 +808,7 @@ export default function PosterEditor() {
           border-radius: 4px;
           border: 2px solid #25262c;
         }
-
+        
         input[type="range"]::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
@@ -801,7 +818,12 @@ export default function PosterEditor() {
           cursor: pointer;
           border-radius: 9999px;
           border: none;
-          margin-top: -6px; /* Center thumb on the track */
+          margin-top: -6px;
+          transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover, input[type="range"]:active::-webkit-slider-thumb {
+            transform: scale(1.25);
         }
 
         input[type="range"]::-moz-range-thumb {
@@ -811,6 +833,11 @@ export default function PosterEditor() {
           cursor: pointer;
           border-radius: 9999px;
           border: none;
+          transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        input[type="range"]::-moz-range-thumb:hover, input[type="range"]:active::-moz-range-thumb {
+            transform: scale(1.25);
         }
 
         input[type="range"]::-webkit-slider-runnable-track {
@@ -831,30 +858,23 @@ export default function PosterEditor() {
             accent-color: #3b82f6;
         }
 
-        @keyframes fillCircle {
-          from {
-            stroke-dasharray: 0, 300;
-          }
-          to {
-            stroke-dasharray: 300, 300;
-          }
+        /* NEW: silky pointer interactions */
+        input[type="range"] {
+          -webkit-tap-highlight-color: transparent;
+          touch-action: none; /* prevents scroll from hijacking drag */
         }
-        
-        .fill-circle-animation {
-          animation: fillCircle 1.5s linear infinite;
-        }
+        input[type="range"]::-webkit-slider-runnable-track,
+        input[type="range"]::-moz-range-track { transition: none; }
 
-        .checkmark-animation {
-          stroke-dasharray: 100;
-          stroke-dashoffset: 100;
-          animation: drawCheckmark 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+        @keyframes fillCircle {
+          from { stroke-dasharray: 0, 300; }
+          to { stroke-dasharray: 300, 300; }
         }
         
-        @keyframes drawCheckmark {
-          to {
-            stroke-dashoffset: 0;
-          }
-        }
+        .fill-circle-animation { animation: fillCircle 1.5s linear infinite; }
+
+        .checkmark-animation { stroke-dasharray: 100; stroke-dashoffset: 100; animation: drawCheckmark 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards; }
+        @keyframes drawCheckmark { to { stroke-dashoffset: 0; } }
         `}
       </style>
 
@@ -878,7 +898,6 @@ export default function PosterEditor() {
   <Header />
 </div>
 
-
   {/* Right side actions */}
   <div className="flex items-center gap-4">
     <button
@@ -898,7 +917,6 @@ export default function PosterEditor() {
   </div>
 </header>
 
-
       {/* Main Container */}
       <main className="flex-1 overflow-hidden flex pt-16 bg-[#161719]">
         {/* Left Sidebar */}
@@ -912,71 +930,62 @@ export default function PosterEditor() {
   className="absolute lg:relative left-0 top-0 bottom-0 w-80 bg-transparent border-r border-zinc-700/30 flex flex-col p-6 z-10 overflow-y-auto custom-scrollbar"
 >
 
-              <button
-                className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-red-500 lg:hidden cursor-pointer"
-                onClick={() => setIsLeftSidebarOpen(false)}
-                aria-label="Close sidebar"
-              >
-                <X size={20} />
-              </button>
-              <div className="flex flex-col gap-8 pt-4">
-                <Section title="Logo Tweaks">
-                  <InputGroup
-                    label="Size"
-                    value={logoZoom}
-                    unit="%"
-                    onReset={() => setLogoZoom(100)}
-                    isDefault={logoZoom === 100}
+            <button
+              className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-red-500 lg:hidden cursor-pointer"
+              onClick={() => setIsLeftSidebarOpen(false)}
+              aria-label="Close sidebar"
+            >
+              <X size={20} />
+            </button>
+            <div className="flex flex-col gap-8 pt-4">
+              <Section title="Logo Tweaks">
+                <InputGroup
+                  label="Size"
+                  value={logoZoom}
+                  unit="%"
+                  onReset={() => setLogoZoom(100)}
+                  isDefault={logoZoom === 100}
+                >
+                  <input type="range" min="10" max="200" step="0.1" value={logoZoom} onInput={makeSmoothRangeHandler(setLogoZoom)} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
+                </InputGroup>
+                <InputGroup
+                  label="Rounded Corners"
+                  value={logoRadius}
+                  unit="px"
+                  onReset={() => setLogoRadius(0)}
+                  isDefault={logoRadius === 0}
+                >
+                  <input type="range" min="0" max="50" step="0.5" value={logoRadius} onInput={makeSmoothRangeHandler(setLogoRadius)} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
+                </InputGroup>
+              </Section>
+              <div className="w-full h-px bg-zinc-700/50" />
+              <Section title="Ready to Go?">
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => { fileInputRef.current?.click() }}
+                    disabled={uploading}
+                    className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md"
                   >
-                    <input type="range" min="10" max="200" value={logoZoom} onChange={(e) => setLogoZoom(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
-                  </InputGroup>
-                  <InputGroup
-                    label="Transparency"
-                    value={logoOpacity}
-                    unit="%"
-                    onReset={() => setLogoOpacity(100)}
-                    isDefault={logoOpacity === 100}
+                    <PlusCircle size={16} /> Add Your Logo
+                  </button>
+                  <button
+                    onClick={handleGenerateClick}
+                    disabled={!logoImage || generating}
+                    className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
                   >
-                    <input type="range" min="0" max="100" value={logoOpacity} onChange={(e) => setLogoOpacity(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
-                  </InputGroup>
-                  <InputGroup
-                    label="Rounded Corners"
-                    value={logoRadius}
-                    unit="px"
-                    onReset={() => setLogoRadius(0)}
-                    isDefault={logoRadius === 0}
+                    <Download size={16} /> Get Your Masterpiece
+                  </button>
+                  <input ref={fileInputRef} type="file" onChange={handleLogoUpload} accept="image/*" className="hidden" />
+                </div>
+              </Section>
+              <div className="w-full h-px bg-zinc-700/50" />
+              <Section title="Reset">
+                  <button
+                    onClick={resetAllSettings}
+                    className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md"
                   >
-                    <input type="range" min="0" max="50" value={logoRadius} onChange={(e) => setLogoRadius(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
-                  </InputGroup>
-                </Section>
-                <div className="w-full h-px bg-zinc-700/50" />
-                <Section title="Ready to Go?">
-                  <div className="flex flex-col gap-3">
-                    <button
-                      onClick={() => { fileInputRef.current?.click() }}
-                      disabled={uploading}
-                      className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md"
-                    >
-                      <PlusCircle size={16} /> Add Your Logo
-                    </button>
-                    <button
-                      onClick={handleGenerateClick}
-                      disabled={!logoImage || generating}
-                      className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
-                    >
-                      <Download size={16} /> Get Your Masterpiece
-                    </button>
-                    <input ref={fileInputRef} type="file" onChange={handleLogoUpload} accept="image/*" className="hidden" />
-                  </div>
-                </Section>
-                <div className="w-full h-px bg-zinc-700/50" />
-                <Section title="Reset">
-                    <button
-                        onClick={resetAllSettings}
-                        className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md"
-                    >
-                        <RotateCcw size={16} /> Start Over
-                    </button>
+                    <RotateCcw size={16} /> Start Over
+                  </button>
                 </Section>
               </div>
             </motion.aside>
@@ -992,7 +1001,7 @@ export default function PosterEditor() {
   )}
 
   {/* 16:9 Ratio Container */}
-  <div className="relative w-full max-w-[1280px] aspect-[16/9] shadow-2xl rounded-xl overflow-hidden flex items-center justify-center bg-[#25262c] border-2 border-zinc-700/50">
+  <div className="relative w-full max-w-[1280px] aspect-[16/9] shadow-2xl rounded-xl overflow-hidden flex items-center justify-center bg-[#25262c] border-2 border-dashed border-zinc-700/50">
     <canvas
       ref={combinedCanvasRef}
       className="w-full h-full object-contain"
@@ -1027,7 +1036,6 @@ export default function PosterEditor() {
   </div>
 </div>
 
-
         {/* Right Sidebar */}
         <AnimatePresence>
           {isRightSidebarOpen && (
@@ -1056,7 +1064,7 @@ export default function PosterEditor() {
                     onReset={() => setLogoHorizontalOffset(0)}
                     isDefault={logoHorizontalOffset === 0}
                   >
-                    <input type="range" min="-50" max="50" value={logoHorizontalOffset} onChange={(e) => setLogoHorizontalOffset(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
+                    <input type="range" min="-50" max="50" step="0.1" value={logoHorizontalOffset} onInput={makeSmoothRangeHandler(setLogoHorizontalOffset)} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
                   </InputGroup>
                   <InputGroup
                     label="Vertical"
@@ -1065,7 +1073,7 @@ export default function PosterEditor() {
                     onReset={() => setLogoVerticalOffset(0)}
                     isDefault={logoVerticalOffset === 0}
                   >
-                    <input type="range" min="-50" max="50" value={logoVerticalOffset} onChange={(e) => setLogoVerticalOffset(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
+                    <input type="range" min="-50" max="50" step="0.1" value={logoVerticalOffset} onInput={makeSmoothRangeHandler(setLogoVerticalOffset)} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
                   </InputGroup>
                 </Section>
                 <div className="w-full h-px bg-zinc-700/50" />
@@ -1095,10 +1103,10 @@ export default function PosterEditor() {
                     onReset={() => setLogoBorderWidth(0)}
                     isDefault={logoBorderWidth === 0}
                   >
-                    <input type="range" min="0" max="20" value={logoBorderWidth} onChange={(e) => setLogoBorderWidth(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
+                    <input type="range" min="0" max="20" step="0.5" value={logoBorderWidth} onInput={makeSmoothRangeHandler(setLogoBorderWidth)} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
                     <div className="flex items-center justify-between text-zinc-400 text-xs font-medium mt-2">
                       <span>Outline Color</span>
-                      <input type="color" value={logoBorderColor} onChange={(e) => setLogoBorderColor(e.target.value)} disabled={!logoImage || logoBorderWidth === 0} className="w-6 h-6 rounded-md border-none cursor-pointer" />
+                      <input type="color" value={logoBorderColor} onInput={(e) => setLogoBorderColor((e.target as HTMLInputElement).value)} disabled={!logoImage || logoBorderWidth === 0} className="w-6 h-6 rounded-md border-none cursor-pointer" />
                     </div>
                   </InputGroup>
                 </Section>
@@ -1142,7 +1150,7 @@ export default function PosterEditor() {
                     onReset={() => setLogoPlateRadius(0)}
                     isDefault={logoPlateRadius === 0}
                   >
-                    <input type="range" min="0" max="50" value={logoPlateRadius} onChange={(e) => setLogoPlateRadius(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage || backgroundType !== 'white'} />
+                    <input type="range" min="0" max="50" step="0.5" value={logoPlateRadius} onInput={makeSmoothRangeHandler(setLogoPlateRadius)} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage || backgroundType !== 'white'} />
                   </InputGroup>
                   <InputGroup
                     label="Horizontal Padding"
@@ -1151,7 +1159,7 @@ export default function PosterEditor() {
                     onReset={() => setLogoPlateHorizontalPadding(15)}
                     isDefault={logoPlateHorizontalPadding === 15}
                   >
-                    <input type="range" min="0" max="100" value={logoPlateHorizontalPadding} onChange={(e) => setLogoPlateHorizontalPadding(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage || backgroundType !== 'white'} />
+                    <input type="range" min="0" max="100" step="0.1" value={logoPlateHorizontalPadding} onInput={makeSmoothRangeHandler(setLogoPlateHorizontalPadding)} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage || backgroundType !== 'white'} />
                   </InputGroup>
                   <InputGroup
                     label="Vertical Padding"
@@ -1160,7 +1168,7 @@ export default function PosterEditor() {
                     onReset={() => setLogoPlateVerticalPadding(15)}
                     isDefault={logoPlateVerticalPadding === 15}
                   >
-                    <input type="range" min="0" max="100" value={logoPlateVerticalPadding} onChange={(e) => setLogoPlateVerticalPadding(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage || backgroundType !== 'white'} />
+                    <input type="range" min="0" max="100" step="0.1" value={logoPlateVerticalPadding} onInput={makeSmoothRangeHandler(setLogoPlateVerticalPadding)} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage || backgroundType !== 'white'} />
                   </InputGroup>
                 </Section>
               </div>
@@ -1248,7 +1256,7 @@ export default function PosterEditor() {
                         max="1.0"
                         step="0.1"
                         value={exportSettings.quality}
-                        onChange={(e) => setExportSettings({ ...exportSettings, quality: Number(e.target.value) })}
+                        onInput={makeSmoothRangeHandler((n) => setExportSettings(s => ({ ...s, quality: n })))}
                         className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600 mt-2"
                       />
                       <span className="text-xs text-zinc-500 text-right block mt-1">{Math.round(exportSettings.quality * 100)}%</span>
@@ -1307,21 +1315,21 @@ export default function PosterEditor() {
                     </div>
                 )}
                 {exportStatus === 'complete' && (
-                       <div className="w-20 h-20 flex items-center justify-center">
-                         <svg className="w-full h-full text-green-500" viewBox="0 0 52 52">
-                             <circle cx="26" cy="26" r="25" fill="none" stroke="currentColor" strokeWidth="3" />
-                             <motion.path
-                                 className="checkmark-animation"
-                                 fill="none"
-                                 stroke="currentColor"
-                                 strokeWidth="3"
-                                 d="M14.1 27.2l7.1 7.2 16.7-16.8"
-                                 initial={{ strokeDashoffset: 100 }}
-                                 animate={{ strokeDashoffset: 0 }}
-                                 transition={{ duration: 0.6 }}
-                             />
-                         </svg>
-                       </div>
+                        <div className="w-20 h-20 flex items-center justify-center">
+                            <svg className="w-full h-full text-green-500" viewBox="0 0 52 52">
+                                <circle cx="26" cy="26" r="25" fill="none" stroke="currentColor" strokeWidth="3" />
+                                <motion.path
+                                    className="checkmark-animation"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="3"
+                                    d="M14.1 27.2l7.1 7.2 16.7-16.8"
+                                    initial={{ strokeDashoffset: 100 }}
+                                    animate={{ strokeDashoffset: 0 }}
+                                    transition={{ duration: 0.6 }}
+                                />
+                            </svg>
+                        </div>
                 )}
                 <span className="mt-4 text-sm font-light text-zinc-200">
                   {exportStatus === 'loading' ? 'Whipping up your poster...' : 'Your poster is ready! 🎉'}

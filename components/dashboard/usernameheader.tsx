@@ -4,33 +4,39 @@ import React, { useEffect } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 
-// Helper to capitalize the first letter
+// Helper to capitalize first letter
 function capitalizeFirstLetter(name: string): string {
   if (!name) return "Guest";
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
-// Variants for the popping letters
+// Variants for each letter animation
 const letterVariants = {
   hidden: { y: 20, opacity: 0 },
   visible: { y: 0, opacity: 1 },
 };
 
-// Animated SVG character with improved animations
+// Animated SVG character
 const WavingAnimeCharacter = () => {
-  const controls = useAnimation();
+  const blinkControls = useAnimation();
 
   useEffect(() => {
-    // Start the blinking animation loop
+    let mounted = true;
+
     const blinkLoop = async () => {
-      while (true) {
-        await controls.start({ scaleY: 0.1, transition: { duration: 0.05 } });
-        await controls.start({ scaleY: 1, transition: { duration: 0.1 } });
-        await new Promise((resolve) => setTimeout(resolve, Math.random() * 2000 + 3000));
+      while (mounted) {
+        await blinkControls.start({ scaleY: 0.1, transition: { duration: 0.05 } });
+        await blinkControls.start({ scaleY: 1, transition: { duration: 0.1 } });
+        await new Promise((res) => setTimeout(res, Math.random() * 2000 + 3000));
       }
     };
+
     blinkLoop();
-  }, [controls]);
+
+    return () => {
+      mounted = false; // cleanup
+    };
+  }, [blinkControls]);
 
   return (
     <motion.div
@@ -38,51 +44,25 @@ const WavingAnimeCharacter = () => {
       style={{ top: "-20px", left: "20px" }}
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      transition={{
-        type: "spring",
-        damping: 10,
-        stiffness: 100,
-        delay: 0.8,
-      }}
+      transition={{ type: "spring", damping: 10, stiffness: 100, delay: 0.8 }}
       whileHover={{ y: -5, transition: { type: "spring", stiffness: 400, damping: 10 } }}
     >
-      <motion.svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 100 100"
-      >
+      <motion.svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
         {/* Headband */}
-        <motion.rect
-          x="20"
-          y="28"
-          width="60"
-          height="8"
-          rx="4"
-          fill="#333"
-        />
-        {/* Headband Symbol */}
-        <motion.path
-          d="M45,32 C48,30 52,30 55,32"
-          stroke="#fff"
-          strokeWidth="1.5"
-          fill="none"
-        />
+        <motion.rect x="20" y="28" width="60" height="8" rx="4" fill="#333" />
+        <motion.path d="M45,32 C48,30 52,30 55,32" stroke="#fff" strokeWidth="1.5" fill="none" />
         {/* Head and Hair */}
         <motion.path
           d="M50,20 Q60,10 70,20 L65,30 Q60,40 50,35 Q40,40 35,30 L30,20 Q40,10 50,20"
           fill="#f3a745"
         />
-        {/* Eyes (animating) */}
-        <motion.g animate={controls}>
+        {/* Eyes */}
+        <motion.g animate={blinkControls}>
           <motion.circle cx="43" cy="45" r="3" fill="#333" />
           <motion.circle cx="57" cy="45" r="3" fill="#333" />
         </motion.g>
         {/* Mouth */}
-        <motion.path
-          d="M45,55 Q50,60 55,55"
-          stroke="#333"
-          strokeWidth="2"
-          fill="none"
-        />
+        <motion.path d="M45,55 Q50,60 55,55" stroke="#333" strokeWidth="2" fill="none" />
         {/* Waving arm */}
         <motion.path
           d="M70,60 C80,50 85,40 80,30 L75,35"
@@ -94,12 +74,7 @@ const WavingAnimeCharacter = () => {
             rotate: [0, 20, -10, 20, 0],
             y: [0, -5, 5, -5, 0],
           }}
-          transition={{
-            repeat: Infinity,
-            repeatType: "loop",
-            duration: 2.5,
-            delay: 1.5,
-          }}
+          transition={{ repeat: Infinity, repeatType: "loop", duration: 2.5, delay: 1.5 }}
         />
       </motion.svg>
     </motion.div>
@@ -129,15 +104,13 @@ export default function UserHeader() {
           <WavingAnimeCharacter />
           <motion.span
             className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-teal-600 to-indigo-700"
-            variants={{
-              visible: { transition: { staggerChildren: 0.05 } },
-            }}
             initial="hidden"
             animate="visible"
+            variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
           >
             {nameArray.map((letter, index) => (
               <motion.span key={index} variants={letterVariants} className="inline-block">
-                {letter === " " ? "\u00A0" : letter} {/* Preserve space */}
+                {letter === " " ? "\u00A0" : letter}
               </motion.span>
             ))}
           </motion.span>
