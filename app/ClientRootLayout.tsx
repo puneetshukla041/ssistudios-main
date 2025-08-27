@@ -69,12 +69,11 @@ function AppLayout({ children }: { children: ReactNode }) {
   }, [isSidebarOpen]);
 
   // Background classes
-  const themeBg =
-    theme === "light"
-      ? "bg-white text-gray-900"
-      : theme === "dark"
-      ? "bg-black text-white"
-      : "relative overflow-hidden text-gray-900"; // flower theme handled by CherryBlossomBackground
+// Background classes
+const themeBg =
+  theme === "light"
+    ? "bg-white text-gray-900"
+    : "relative overflow-hidden text-gray-900"; // Blossom
 
   if (isEditorPage) return <>{children}</>;
 

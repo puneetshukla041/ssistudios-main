@@ -6,14 +6,14 @@ import { useTheme, CherryBlossomBackground, Theme } from "@/contexts/ThemeContex
 
 // Icons
 const SunIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 21v-2.25m-6.364-.386l1.591-1.591M3 12h2.25m.386-6.364l1.591 1.591M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-16 h-16">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25M21 12h-2.25M12 21v-2.25M3 12h2.25M6.364 6.364l1.591 1.591M17.045 17.045l1.591 1.591M6.364 17.045l1.591-1.591M17.045 6.364l1.591-1.591M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
   </svg>
 );
 
 const FlowerIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9.75 21.75M3.75 15.904l1.84-1.84a5.25 5.25 0 017.424 0l.969.969a1.125 1.125 0 001.957 0h3.843a1.125 1.125 0 001.957 0l.969-.969a5.25 5.25 0 017.424 0l1.84 1.84M15.75 12.185v-1.378a3.375 3.375 0 00-3.375-3.375H12a2.625 2.625 0 00-2.625 2.625v1.378M9.75 15.904h7.5M10.5 7.5v-1.875c0-.621.504-1.125 1.125-1.125h.75c.621 0 1.125.504 1.125 1.125v1.875m-3.75 0h7.5" />
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-16 h-16">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6a3 3 0 11-6 0 3 3 0 016 0zM18 12a3 3 0 11-6 0 3 3 0 016 0zM12 18a3 3 0 11-6 0 3 3 0 016 0zM18 6a3 3 0 11-6 0 3 3 0 016 0z" />
   </svg>
 );
 
@@ -27,7 +27,6 @@ const ThemePageComponent = () => {
   const { theme, setTheme } = useTheme();
   const [applying, setApplying] = useState(false);
 
-  // Only light and flower themes
   const themes = [
     { name: "light", label: "Sunrise", icon: <SunIcon />, bgColor: "bg-white", textColor: "text-gray-800" },
     { name: "flower", label: "Blossom", icon: <FlowerIcon />, bgColor: "bg-pink-100", textColor: "text-gray-900" },
@@ -55,13 +54,11 @@ const ThemePageComponent = () => {
         </motion.div>
       )}
 
-      {/* Header */}
       <div className="text-center max-w-2xl py-8">
         <h1 className="text-6xl md:text-7xl font-bold mb-4 tracking-tighter">Customize Your Experience</h1>
         <p className="text-lg md:text-xl font-medium opacity-80">Select a theme that best fits your style.</p>
       </div>
 
-      {/* Theme Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl py-12">
         {themes.map((t) => (
           <motion.div

@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 // Types
-export type Theme = "light" | "dark" | "flower";
+export type Theme = "light" | "flower";
 export type ThemeContextType = { theme: Theme; setTheme: (theme: Theme) => void };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -16,11 +16,15 @@ export const useTheme = () => {
 
 // --- Provider ---
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setThemeState] = useState<Theme>("light");
+  const [theme, setThemeState] = useState<Theme>("flower"); // 🌸 default Blossom
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as Theme | null;
-    if (savedTheme) setThemeState(savedTheme);
+    if (savedTheme) {
+      setThemeState(savedTheme);
+    } else {
+      setThemeState("flower"); // always Blossom if nothing saved
+    }
   }, []);
 
   useEffect(() => {
@@ -37,7 +41,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
 };
 
-// --- Cherry Blossom Background with Artistic Japanese Tree ---
+// --- Cherry Blossom Background ---
 export const CherryBlossomBackground = () => {
   const { theme } = useTheme();
 
@@ -46,7 +50,7 @@ export const CherryBlossomBackground = () => {
   // Random petals from branches
   const branchPetals = Array.from({ length: 15 }).map((_, i) => {
     const size = Math.random() * 6 + 3;
-    const left = 70 + Math.random() * 20; // around tree right side
+    const left = 70 + Math.random() * 20;
     const top = 50 + Math.random() * 50;
     const duration = 8 + Math.random() * 6;
     const delay = Math.random() * 5;
@@ -68,21 +72,19 @@ export const CherryBlossomBackground = () => {
 
   return (
     <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-pink-200">
-      {/* Artistic Japanese tree on the right */}
+      {/* Artistic Japanese tree */}
       <svg
         className="absolute right-0 bottom-0 h-3/4 w-auto"
         viewBox="0 0 200 400"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Thick trunk */}
         <path
           d="M100 400 C95 300 105 250 100 200 C95 150 105 120 100 80"
           stroke="#8B5A2B"
           strokeWidth="8"
           strokeLinecap="round"
         />
-        {/* Long curved branches */}
         <path
           d="M100 200 C130 180 170 150 180 120"
           stroke="#8B5A2B"
@@ -101,20 +103,18 @@ export const CherryBlossomBackground = () => {
           strokeWidth="4"
           strokeLinecap="round"
         />
-        {/* Blossoms on branches */}
         <circle cx="180" cy="120" r="10" fill="#F9A8D4" />
         <circle cx="170" cy="60" r="8" fill="#FBB6CE" />
         <circle cx="30" cy="70" r="10" fill="#F9A8D4" />
         <circle cx="40" cy="100" r="6" fill="#FBB6CE" />
       </svg>
 
-      {/* Falling petals from sky */}
+      {/* Falling petals */}
       {Array.from({ length: 30 }).map((_, i) => {
         const size = Math.random() * 6 + 4;
-        const left = Math.random() * 100; // percentage
-        const duration = Math.random() * 10 + 10; // seconds
+        const left = Math.random() * 100;
+        const duration = Math.random() * 10 + 10;
         const delay = Math.random() * 5;
-
         return (
           <div
             key={i}
@@ -129,8 +129,6 @@ export const CherryBlossomBackground = () => {
           />
         );
       })}
-
-      {/* Petals from branches */}
       {branchPetals}
 
       <style jsx>{`
