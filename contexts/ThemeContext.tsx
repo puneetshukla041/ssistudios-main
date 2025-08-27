@@ -72,64 +72,88 @@ export const CherryBlossomBackground = () => {
 
   return (
     <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-pink-200">
-      {/* Artistic Japanese tree */}
+      {/* Artistic Japanese tree - Enhanced with more depth and subtle colors */}
       <svg
-        className="absolute right-0 bottom-0 h-3/4 w-auto"
-        viewBox="0 0 200 400"
+        className="absolute right-0 bottom-0 h-4/5 w-auto" // Slightly larger tree
+        viewBox="0 0 250 450" // Adjusted viewBox
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
+        {/* Main Trunk */}
         <path
-          d="M100 400 C95 300 105 250 100 200 C95 150 105 120 100 80"
-          stroke="#8B5A2B"
-          strokeWidth="8"
+          d="M120 450 C110 350 130 280 120 220 C110 160 130 130 120 90"
+          stroke="#5a3d2e" // Darker, richer brown
+          strokeWidth="10"
+          strokeLinecap="round"
+        />
+        {/* Main Branches */}
+        <path
+          d="M120 220 C160 200 200 160 210 130"
+          stroke="#5a3d2e"
+          strokeWidth="6"
           strokeLinecap="round"
         />
         <path
-          d="M100 200 C130 180 170 150 180 120"
-          stroke="#8B5A2B"
+          d="M120 180 C80 160 50 120 40 90"
+          stroke="#5a3d2e"
+          strokeWidth="6"
+          strokeLinecap="round"
+        />
+        {/* Smaller Branches and Blossom Clusters */}
+        <path
+          d="M120 150 C140 120 180 90 190 70"
+          stroke="#5a3d2e"
           strokeWidth="5"
           strokeLinecap="round"
         />
-        <path
-          d="M100 150 C70 130 40 100 30 70"
-          stroke="#8B5A2B"
-          strokeWidth="5"
-          strokeLinecap="round"
-        />
-        <path
-          d="M100 120 C120 100 160 80 170 60"
-          stroke="#8B5A2B"
-          strokeWidth="4"
-          strokeLinecap="round"
-        />
-        <circle cx="180" cy="120" r="10" fill="#F9A8D4" />
-        <circle cx="170" cy="60" r="8" fill="#FBB6CE" />
-        <circle cx="30" cy="70" r="10" fill="#F9A8D4" />
-        <circle cx="40" cy="100" r="6" fill="#FBB6CE" />
+        <circle cx="210" cy="130" r="12" fill="#fbcfe8" /> {/* Lighter pink for blossoms */}
+        <circle cx="190" cy="70" r="10" fill="#fbcfe8" />
+        <circle cx="40" cy="90" r="12" fill="#fbcfe8" />
+        <circle cx="60" cy="140" r="8" fill="#fbcfe8" />
+        <circle cx="120" cy="90" r="15" fill="#fbcfe8" /> {/* Main blossom cluster */}
+
+        {/* Inner glow for blossoms */}
+        <filter id="glow">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+          <feMerge>
+            <feMergeNode in="SourceGraphic"/>
+            <feMergeNode in="blur"/>
+          </feMerge>
+        </filter>
+        <circle cx="210" cy="130" r="8" fill="#ee8ec4ff" filter="url(#glow)" />
+        <circle cx="190" cy="70" r="6" fill="#e68dbfff" filter="url(#glow)" />
+        <circle cx="40" cy="90" r="8" fill="#fce7f3" filter="url(#glow)" />
+        <circle cx="60" cy="140" r="5" fill="#fce7f3" filter="url(#glow)" />
+        <circle cx="120" cy="90" r="10" fill="#e280b8ff" filter="url(#glow)" />
       </svg>
 
-      {/* Falling petals */}
-      {Array.from({ length: 30 }).map((_, i) => {
-        const size = Math.random() * 6 + 4;
-        const left = Math.random() * 100;
-        const duration = Math.random() * 10 + 10;
-        const delay = Math.random() * 5;
-        return (
-          <div
-            key={i}
-            className="absolute bg-pink-400 rounded-full shadow-md animate-fall"
-            style={{
-              width: size,
-              height: size,
-              left: `${left}%`,
-              animationDuration: `${duration}s`,
-              animationDelay: `${delay}s`,
-            }}
-          />
-        );
-      })}
-      {branchPetals}
+{/* Falling petals with sharper leaf shape */}
+{Array.from({ length: 30 }).map((_, i) => {
+  const width = Math.random() * 6 + 4;
+  const height = width * (1.5 + Math.random() * 0.5); // elongated shape
+  const left = Math.random() * 100;
+  const duration = Math.random() * 10 + 10;
+  const delay = Math.random() * 5;
+  const rotate = Math.random() * 360; // random rotation
+
+  return (
+    <div
+      key={i}
+      className="absolute bg-pink-500 shadow-md animate-fall"
+      style={{
+        width,
+        height,
+        left: `${left}%`,
+        borderRadius: "50% 50% 50% 50% / 60% 60% 40% 40%", // sharper leaf-like
+        transform: `rotate(${rotate}deg)`,
+        animationDuration: `${duration}s`,
+        animationDelay: `${delay}s`,
+      }}
+    />
+  );
+})}
+{branchPetals}
+
 
       <style jsx>{`
         @keyframes fall {

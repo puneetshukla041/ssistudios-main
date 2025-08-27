@@ -166,9 +166,10 @@ export default function DashboardPage() {
       </section>
 
   {/* --- Newest Templates --- */}
-  <div className="-ml-4 sm:-ml-6 lg:-ml-12 xl:-ml-80">
-    <NewTemplates />
-  </div>
+<div className="ml-0 sm:ml-0 lg:ml-0 xl:ml-0 my-2">
+  <NewTemplates />
+</div>
+
       {/* --- AI Creative --- */}
       <div className="mt-8">
         <Aicreative/>
