@@ -34,8 +34,7 @@ const menu: MenuItem[] = [
     name: 'Posters',
     icon: Layout,
     children: [
-      { name: 'Upload Templates', path: '/poster/upload' },
-      { name: 'Single Logo Editor', path: '/poster/editor/single-logo' },
+      { name: 'Single Logo Editor', path: '/selector/posters' },
       { name: 'Multiple Logos Editor', path: '/poster/multiple-logo-editor' },
     ],
   },
@@ -43,8 +42,7 @@ const menu: MenuItem[] = [
     name: 'Visiting Cards',
     icon: FileText,
     children: [
-      { name: 'Create New', path: '/visiting-cards/new' },
-      { name: 'Manage Templates', path: '/visiting-cards/manage' },
+      { name: 'Choose Templates', path: '/visitingcard' },
     ],
   },
   {

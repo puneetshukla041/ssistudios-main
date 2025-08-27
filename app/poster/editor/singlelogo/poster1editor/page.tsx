@@ -8,18 +8,12 @@ import {
   PlusCircle,
   Download,
   RotateCcw,
-  Maximize2,
-  Minimize2,
-  Droplets,
-  Ruler,
-  Paintbrush,
+  LayoutPanelLeft,
   Square,
-  LayoutGrid,
-  LayoutPanelLeft
+  LayoutGrid
 } from 'lucide-react'
 
 // --- HELPER FUNCTIONS ---
-// Helper functions remain unchanged, but I've added one new function for the curved plate.
 function drawRoundedRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -88,7 +82,6 @@ function fillRoundedRect(
   ctx.closePath();
   ctx.fill();
 }
-
 
 /** ========= PNG DPI WRITER (valid CRC) ========= */
 function crc32(bytes: Uint8Array) {
@@ -241,7 +234,7 @@ function setJpegDpi(dataUrl: string, dpi: number) {
 /** ============== END JPEG DPI WRITER ============== */
 
 // --- TYPE DEFINITIONS ---
-type ExportFormat = 'png' | 'jpeg'
+type ExportFormat = 'png' | 'jpeg' | 'jpg'
 type ExportResolution = { name: string; width: number; height: number; kind?: 'preset' | 'original' }
 type BlendMode =
   | 'source-over'
@@ -307,7 +300,6 @@ export default function PosterEditor() {
 
   // Logo transformation states
   const [logoZoom, setLogoZoom] = useState(100)
-  const [logoRotation, setLogoRotation] = useState(0)
   const [logoOpacity, setLogoOpacity] = useState(100)
   const [logoBorderWidth, setLogoBorderWidth] = useState(0)
   const [logoBorderColor, setLogoBorderColor] = useState('#ffffff')
@@ -321,16 +313,38 @@ export default function PosterEditor() {
 
   const [exportSettings, setExportSettings] = useState({
     format: 'jpeg' as ExportFormat,
-    resolution: RESOLUTIONS[0],
-    quality: 1.0
+    resolution: RESOLUTIONS.find(r => r.name === 'Original') || RESOLUTIONS[0],
+    quality: 1.0,
+    dpi: 300
   })
+  const [exportStatus, setExportStatus] = useState<'idle' | 'loading' | 'complete'>('idle')
 
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true)
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true)
 
-
   const previewWidth = 1920
   const previewHeight = 1080
+
+  const resetAllSettings = () => {
+    setLogoZoom(100);
+    setLogoOpacity(100);
+    setLogoBorderWidth(0);
+    setLogoBorderColor('#ffffff');
+    setLogoBlendMode('source-over');
+    setLogoHorizontalOffset(0);
+    setLogoVerticalOffset(0);
+    setLogoRadius(0);
+    setBackgroundType('original');
+    setLogoPlateHorizontalPadding(15);
+    setLogoPlateVerticalPadding(15);
+    setLogoPlateRadius(0);
+    setExportSettings({
+      format: 'jpeg',
+      resolution: RESOLUTIONS.find(r => r.name === 'Original') || RESOLUTIONS[0],
+      quality: 1.0,
+      dpi: 300
+    });
+  }
 
   useEffect(() => {
     if (!baseImageSrc) return setBaseImage(null)
@@ -388,7 +402,6 @@ export default function PosterEditor() {
     ctx.save()
 
     ctx.translate(canvas.width / 2, canvas.height / 2)
-    ctx.rotate(logoRotation * (Math.PI / 180))
 
     const originalLogoDrawWidth = logoImage.width;
     const originalLogoDrawHeight = logoImage.height;
@@ -415,14 +428,13 @@ export default function PosterEditor() {
     if (logoBorderWidth > 0) {
       ctx.save();
       ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate(logoRotation * (Math.PI / 180));
       ctx.scale(currentLogoScaleFactor, currentLogoScaleFactor);
       ctx.strokeStyle = logoBorderColor;
       ctx.lineWidth = logoBorderWidth / currentLogoScaleFactor;
       drawRoundedRect(ctx, drawX, drawY, originalLogoDrawWidth, originalLogoDrawHeight, effectiveLogoRadius, ctx.lineWidth);
       ctx.restore();
     }
-  }, [logoImage, logoZoom, logoRotation, logoOpacity, logoRadius, logoBorderWidth, logoBorderColor])
+  }, [logoImage, logoZoom, logoOpacity, logoRadius, logoBorderWidth, logoBorderColor])
 
   useEffect(() => {
     drawLogoPreview()
@@ -445,7 +457,7 @@ export default function PosterEditor() {
 
     if (logoImage && logoPreviewCanvasRef.current) {
       const transformedLogoCanvas = logoPreviewCanvasRef.current;
-      const containerConfig = { top: 0.62, bottom: 0.76, hPadding: 0.35 };
+      const containerConfig = { top: 0.62, bottom: 0.76, hPadding: 0.35 }
       const containerY = previewHeight * containerConfig.top;
       const containerHeight = previewHeight * (containerConfig.bottom - containerConfig.top);
       const containerX = previewWidth * containerConfig.hPadding;
@@ -489,6 +501,7 @@ export default function PosterEditor() {
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
+    setLogoRadius(15); // Set default radius on upload
     const objectUrl = URL.createObjectURL(file)
     setLogoImageSrc(objectUrl)
     const img = new Image()
@@ -511,11 +524,78 @@ export default function PosterEditor() {
     setShowExportModal(true)
   }
 
+  const handleFullscreenClick = () => {
+    if (!combinedCanvasRef.current || !baseImage) return;
+
+    // Create a new canvas with the original image's dimensions
+    const originalWidth = baseImage.naturalWidth || baseImage.width;
+    const originalHeight = baseImage.naturalHeight || baseImage.height;
+    
+    const exportCanvas = document.createElement('canvas');
+    const ctx = exportCanvas.getContext('2d');
+    if (!ctx) return;
+    
+    exportCanvas.width = originalWidth;
+    exportCanvas.height = originalHeight;
+    ctx.imageSmoothingEnabled = true;
+    (ctx as any).imageSmoothingQuality = 'high';
+
+    // Draw the full composition to the new canvas
+    ctx.drawImage(baseImage, 0, 0, originalWidth, originalHeight);
+
+    if (logoImage && logoPreviewCanvasRef.current) {
+        const transformedLogoCanvas = logoPreviewCanvasRef.current;
+        const containerConfig = { top: 0.62, bottom: 0.76, hPadding: 0.35 };
+        const containerY = originalHeight * containerConfig.top;
+        const containerHeight = originalHeight * (containerConfig.bottom - containerConfig.top);
+        const containerX = originalWidth * containerConfig.hPadding;
+        const containerWidth = originalWidth * (1 - 2 * containerConfig.hPadding);
+        const transformedLogoRenderWidth = transformedLogoCanvas.width;
+        const transformedLogoRenderHeight = transformedLogoCanvas.height;
+        const scaleFactorToFitContainer = Math.min(
+            containerWidth / transformedLogoRenderWidth,
+            containerHeight / transformedLogoRenderHeight
+        );
+        const finalLogoWidth = transformedLogoRenderWidth * scaleFactorToFitContainer;
+        const finalLogoHeight = transformedLogoRenderHeight * scaleFactorToFitContainer;
+        let x = containerX + (containerWidth - finalLogoWidth) / 2;
+        let y = containerY + (containerHeight - finalLogoHeight) / 2;
+        x += (logoHorizontalOffset / 100) * containerWidth;
+        y += (logoVerticalOffset / 100) * containerHeight;
+
+        if (backgroundType === 'white') {
+            const hPadding = finalLogoWidth * (logoPlateHorizontalPadding / 100);
+            const vPadding = finalLogoHeight * (logoPlateVerticalPadding / 100);
+            const plateWidth = finalLogoWidth + hPadding * 2;
+            const plateHeight = finalLogoHeight + vPadding * 2;
+            const plateX = x - hPadding;
+            const plateY = y - vPadding;
+            ctx.fillStyle = 'white';
+            fillRoundedRect(ctx, plateX, plateY, plateWidth, plateHeight, logoPlateRadius);
+        }
+
+        ctx.save();
+        ctx.globalCompositeOperation = logoBlendMode;
+        ctx.drawImage(transformedLogoCanvas, x, y, finalLogoWidth, finalLogoHeight);
+        ctx.restore();
+    }
+
+    const dataUrl = exportCanvas.toDataURL('image/png');
+    const newWindow = window.open();
+    if (newWindow) {
+        newWindow.document.write(`<img src="${dataUrl}" style="max-width: 100%; height: auto; display: block; margin: auto;">`);
+        newWindow.document.title = 'Fullscreen Preview';
+    }
+  };
+
   async function executeExport() {
     if (!baseImage || !logoImage || !logoPreviewCanvasRef.current) return
     setGenerating(true)
+    setExportStatus('loading');
     setShowExportModal(false)
-    await new Promise((r) => setTimeout(r, 300))
+    
+    // Simulate processing time
+    await new Promise((r) => setTimeout(r, 1500))
 
     let outW = exportSettings.resolution.width
     let outH = exportSettings.resolution.height
@@ -571,13 +651,19 @@ export default function PosterEditor() {
     ctx.drawImage(transformedLogoCanvas, x, y, finalLogoWidth, finalLogoHeight);
     ctx.restore();
 
-    const mimeType = `image/${exportSettings.format}`
-    let dataUrl = exportCanvas.toDataURL(mimeType, exportSettings.quality)
-    if (exportSettings.format === 'png') {
-      dataUrl = setPngDpi(dataUrl, 300)
-    } else if (exportSettings.format === 'jpeg') {
-      dataUrl = setJpegDpi(dataUrl, 300)
+    const downloadFormat = exportSettings.format;
+    let mimeType = `image/${downloadFormat}`
+    if (downloadFormat === 'jpg') {
+        mimeType = 'image/jpeg';
     }
+
+    let dataUrl = exportCanvas.toDataURL(mimeType, exportSettings.quality)
+    if (downloadFormat === 'png') {
+      dataUrl = setPngDpi(dataUrl, exportSettings.dpi)
+    } else if (downloadFormat === 'jpeg' || downloadFormat === 'jpg') {
+      dataUrl = setJpegDpi(dataUrl, exportSettings.dpi)
+    }
+
     const base64Data = dataUrl.split(',')[1]
     const byteCharacters = atob(base64Data)
     const byteNumbers = new Array(byteCharacters.length)
@@ -590,16 +676,18 @@ export default function PosterEditor() {
     link.href = URL.createObjectURL(blob)
     const fileW = outW
     const fileH = outH
-    link.download = `poster_ssi_${fileW}x${fileH}.${exportSettings.format}`
+    link.download = `poster_ssi_${fileW}x${fileH}.${downloadFormat}`
     link.click()
     URL.revokeObjectURL(link.href)
     setGenerating(false)
+    setExportStatus('complete');
+    setTimeout(() => setExportStatus('idle'), 2000); // Hide after 2 seconds
   }
 
   const ResetButton = ({ onReset, isDefault }: { onReset: () => void; isDefault: boolean }) => (
     <button
       onClick={onReset}
-      className={`text-zinc-500 hover:text-zinc-300 transition-colors duration-200 cursor-pointer ${isDefault ? 'opacity-40 cursor-not-allowed' : 'opacity-100'}`}
+      className={`text-zinc-500 hover:text-blue-500 transition-colors duration-200 cursor-pointer ${isDefault ? 'opacity-40 cursor-not-allowed' : 'opacity-100'}`}
       aria-label="Reset setting"
       disabled={isDefault}
     >
@@ -609,7 +697,7 @@ export default function PosterEditor() {
 
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <div className="flex flex-col gap-3">
-      <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-widest">{title}</h3>
+      <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-widest">{title}</h3>
       {children}
     </div>
   )
@@ -628,35 +716,117 @@ export default function PosterEditor() {
   )
 
   return (
-<div className="absolute top-0 bottom-0 right-0 left-20 bg-black text-neutral-200 overflow-hidden flex flex-col">
+    <div className="absolute top-0 bottom-0 right-0 left-0 sm:left-20 bg-[#161719] text-zinc-200 overflow-hidden flex flex-col font-sans">
+      <style>
+        {`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #25262c;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #555;
+          border-radius: 4px;
+          border: 2px solid #25262c;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 16px;
+          height: 16px;
+          background-color: #3b82f6;
+          cursor: pointer;
+          border-radius: 9999px;
+          border: none;
+          margin-top: -6px; /* Center thumb on the track */
+        }
+
+        input[type="range"]::-moz-range-thumb {
+          width: 16px;
+          height: 16px;
+          background-color: #3b82f6;
+          cursor: pointer;
+          border-radius: 9999px;
+          border: none;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+          width: 100%;
+          height: 4px;
+          background-color: #444;
+          border-radius: 9999px;
+        }
+
+        input[type="range"]::-moz-range-track {
+          width: 100%;
+          height: 4px;
+          background-color: #444;
+          border-radius: 9999px;
+        }
+        
+        .accent-blue-600 {
+            accent-color: #3b82f6;
+        }
+
+        @keyframes fillCircle {
+          from {
+            stroke-dasharray: 0, 300;
+          }
+          to {
+            stroke-dasharray: 300, 300;
+          }
+        }
+        
+        .fill-circle-animation {
+          animation: fillCircle 1.5s linear infinite;
+        }
+
+        .checkmark-animation {
+          stroke-dasharray: 100;
+          stroke-dashoffset: 100;
+          animation: drawCheckmark 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+        }
+        
+        @keyframes drawCheckmark {
+          to {
+            stroke-dashoffset: 0;
+          }
+        }
+        `}
+      </style>
 
       {/* Header */}
-      <header className="absolute top-0 left-0 right-0 h-12 flex items-center justify-between px-4 bg-[#1a1b1f] border-b border-zinc-700/50 z-20">
+      <header className="absolute top-0 left-0 right-0 h-16 flex items-center justify-between px-6 bg-transparent border-b border-zinc-700/30 shadow-sm z-20">
+
         <div className="flex items-center gap-4">
-          <h1 className="text-sm font-bold tracking-wider uppercase text-zinc-400">
-            Professional Poster Designer
+          <h1 className="text-xl font-bold tracking-tight text-zinc-100">
+            SSISTUDIOS POSTER EDITOR
           </h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
-            className="text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+            className="text-zinc-400 hover:text-blue-500 transition-colors cursor-pointer"
             aria-label="Toggle left sidebar"
           >
-            <LayoutPanelLeft size={18} />
+            <LayoutPanelLeft size={20} />
           </button>
           <button
             onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
-            className="text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+            className="text-zinc-400 hover:text-blue-500 transition-colors cursor-pointer"
             aria-label="Toggle right sidebar"
           >
-            <Settings size={18} />
+            <Settings size={20} />
           </button>
         </div>
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 overflow-hidden flex pt-12">
+      <main className="flex-1 overflow-hidden flex pt-16 bg-[#161719]">
         {/* Left Sidebar */}
         <AnimatePresence>
           {isLeftSidebarOpen && (
@@ -665,16 +835,17 @@ export default function PosterEditor() {
               animate={{ x: 0 }}
               exit={{ x: -320 }}
               transition={{ type: "tween", duration: 0.2 }}
-              className="absolute lg:relative left-0 top-12 bottom-0 w-80 bg-[#1a1b1f] border-r border-zinc-700/50 flex flex-col p-4 z-10 overflow-y-auto custom-scrollbar"
+              className="absolute lg:relative left-0 top-16 bottom-0 w-80 bg-transparent border-r border-zinc-700/30 flex flex-col p-6 z-10 overflow-y-auto custom-scrollbar"
+
             >
               <button
-                className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-zinc-300 lg:hidden cursor-pointer"
+                className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-red-500 lg:hidden cursor-pointer"
                 onClick={() => setIsLeftSidebarOpen(false)}
                 aria-label="Close sidebar"
               >
                 <X size={20} />
               </button>
-              <div className="flex flex-col gap-6 pt-4">
+              <div className="flex flex-col gap-8 pt-4">
                 <Section title="Logo Properties">
                   <InputGroup
                     label="Scale"
@@ -683,16 +854,7 @@ export default function PosterEditor() {
                     onReset={() => setLogoZoom(100)}
                     isDefault={logoZoom === 100}
                   >
-                    <input type="range" min="10" max="200" value={logoZoom} onChange={(e) => setLogoZoom(Number(e.target.value))} className="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer range-slider" disabled={!logoImage} />
-                  </InputGroup>
-                  <InputGroup
-                    label="Rotation"
-                    value={logoRotation}
-                    unit="°"
-                    onReset={() => setLogoRotation(0)}
-                    isDefault={logoRotation === 0}
-                  >
-                    <input type="range" min="-180" max="180" value={logoRotation} onChange={(e) => setLogoRotation(Number(e.target.value))} className="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer range-slider" disabled={!logoImage} />
+                    <input type="range" min="10" max="200" value={logoZoom} onChange={(e) => setLogoZoom(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
                   </InputGroup>
                   <InputGroup
                     label="Opacity"
@@ -701,7 +863,7 @@ export default function PosterEditor() {
                     onReset={() => setLogoOpacity(100)}
                     isDefault={logoOpacity === 100}
                   >
-                    <input type="range" min="0" max="100" value={logoOpacity} onChange={(e) => setLogoOpacity(Number(e.target.value))} className="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer range-slider" disabled={!logoImage} />
+                    <input type="range" min="0" max="100" value={logoOpacity} onChange={(e) => setLogoOpacity(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
                   </InputGroup>
                   <InputGroup
                     label="Corner Radius"
@@ -710,28 +872,37 @@ export default function PosterEditor() {
                     onReset={() => setLogoRadius(0)}
                     isDefault={logoRadius === 0}
                   >
-                    <input type="range" min="0" max="50" value={logoRadius} onChange={(e) => setLogoRadius(Number(e.target.value))} className="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer range-slider" disabled={!logoImage} />
+                    <input type="range" min="0" max="50" value={logoRadius} onChange={(e) => setLogoRadius(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
                   </InputGroup>
                 </Section>
                 <div className="w-full h-px bg-zinc-700/50" />
                 <Section title="Tools">
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-3">
                     <button
                       onClick={() => { fileInputRef.current?.click() }}
                       disabled={uploading}
-                      className="flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md bg-zinc-700 hover:bg-zinc-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md"
                     >
                       <PlusCircle size={16} /> Upload Logo
                     </button>
                     <button
                       onClick={handleGenerateClick}
                       disabled={!logoImage || generating}
-                      className="flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md bg-zinc-200 text-zinc-900 hover:bg-zinc-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
                     >
                       <Download size={16} /> Export
                     </button>
                     <input ref={fileInputRef} type="file" onChange={handleLogoUpload} accept="image/*" className="hidden" />
                   </div>
+                </Section>
+                <div className="w-full h-px bg-zinc-700/50" />
+                <Section title="Reset">
+                    <button
+                        onClick={resetAllSettings}
+                        className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md"
+                    >
+                        <RotateCcw size={16} /> Reset All
+                    </button>
                 </Section>
               </div>
             </motion.aside>
@@ -739,23 +910,41 @@ export default function PosterEditor() {
         </AnimatePresence>
 
         {/* Central Preview Area */}
-        <div className="flex-1 flex items-center justify-center p-4 bg-[#1a1b1f] relative">
+        <div className="flex-1 flex items-center justify-center p-8 bg-[#161719] relative">
           {!baseImage && (
             <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-lg font-light">
               Loading base image...
             </div>
           )}
-          <div className="relative w-full h-full max-w-[1280px] max-h-[720px] shadow-2xl rounded-xl overflow-hidden flex items-center justify-center">
+          <div className="relative w-full h-full max-w-[1280px] max-h-[720px] shadow-2xl rounded-xl overflow-hidden flex items-center justify-center bg-[#25262c] border-2 border-zinc-700/50">
             <canvas
               ref={combinedCanvasRef}
               className="w-full h-full object-contain"
             />
             {(!logoImage) && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-lg font-light">
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 text-lg font-light border-2 border-dashed border-zinc-600 rounded-xl">
+                <PlusCircle size={48} className="text-zinc-600 mb-2" />
                 Upload a logo to begin
               </div>
             )}
             <canvas ref={logoPreviewCanvasRef} className="hidden" />
+            <AnimatePresence>
+                {(baseImage && logoImage) && (
+                  <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 20 }}
+                      className="absolute bottom-4 right-4"
+                  >
+                      <button
+                          onClick={handleFullscreenClick}
+                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition-colors cursor-pointer shadow-md"
+                      >
+                          View in Fullscreen
+                      </button>
+                  </motion.div>
+                )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -767,16 +956,17 @@ export default function PosterEditor() {
               animate={{ x: 0 }}
               exit={{ x: 320 }}
               transition={{ type: "tween", duration: 0.2 }}
-              className="absolute lg:relative right-0 top-12 bottom-0 w-80 bg-[#1a1b1f] border-l border-zinc-700/50 flex flex-col p-4 z-10 overflow-y-auto custom-scrollbar"
+              className="absolute lg:relative right-0 top-16 bottom-0 w-80 bg-transparent border-l border-zinc-700/30 flex flex-col p-6 z-10 overflow-y-auto custom-scrollbar"
+
             >
               <button
-                className="absolute top-2 left-2 p-1 text-zinc-500 hover:text-zinc-300 lg:hidden cursor-pointer"
+                className="absolute top-4 left-4 p-2 text-zinc-500 hover:text-red-500 lg:hidden cursor-pointer"
                 onClick={() => setIsRightSidebarOpen(false)}
                 aria-label="Close sidebar"
               >
                 <X size={20} />
               </button>
-              <div className="flex flex-col gap-6 pt-4">
+              <div className="flex flex-col gap-8 pt-4">
 
                 <Section title="Position">
                   <InputGroup
@@ -786,7 +976,7 @@ export default function PosterEditor() {
                     onReset={() => setLogoHorizontalOffset(0)}
                     isDefault={logoHorizontalOffset === 0}
                   >
-                    <input type="range" min="-50" max="50" value={logoHorizontalOffset} onChange={(e) => setLogoHorizontalOffset(Number(e.target.value))} className="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer range-slider" disabled={!logoImage} />
+                    <input type="range" min="-50" max="50" value={logoHorizontalOffset} onChange={(e) => setLogoHorizontalOffset(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
                   </InputGroup>
                   <InputGroup
                     label="Vertical"
@@ -795,7 +985,7 @@ export default function PosterEditor() {
                     onReset={() => setLogoVerticalOffset(0)}
                     isDefault={logoVerticalOffset === 0}
                   >
-                    <input type="range" min="-50" max="50" value={logoVerticalOffset} onChange={(e) => setLogoVerticalOffset(Number(e.target.value))} className="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer range-slider" disabled={!logoImage} />
+                    <input type="range" min="-50" max="50" value={logoVerticalOffset} onChange={(e) => setLogoVerticalOffset(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
                   </InputGroup>
                 </Section>
                 <div className="w-full h-px bg-zinc-700/50" />
@@ -809,7 +999,7 @@ export default function PosterEditor() {
                       value={logoBlendMode}
                       onChange={(e) => setLogoBlendMode(e.target.value as BlendMode)}
                       disabled={!logoImage}
-                      className="w-full px-2 py-1 text-xs rounded bg-zinc-700 border border-zinc-600 text-zinc-200 focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500 cursor-pointer transition-colors"
+                      className="w-full px-3 py-2 text-sm rounded-lg bg-zinc-700 border border-zinc-600 text-zinc-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-colors"
                     >
                       {BLEND_MODES.map((mode) => (
                         <option key={mode} value={mode}>
@@ -825,10 +1015,10 @@ export default function PosterEditor() {
                     onReset={() => setLogoBorderWidth(0)}
                     isDefault={logoBorderWidth === 0}
                   >
-                    <input type="range" min="0" max="20" value={logoBorderWidth} onChange={(e) => setLogoBorderWidth(Number(e.target.value))} className="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer range-slider" disabled={!logoImage} />
+                    <input type="range" min="0" max="20" value={logoBorderWidth} onChange={(e) => setLogoBorderWidth(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage} />
                     <div className="flex items-center justify-between text-zinc-400 text-xs font-medium mt-2">
                       <span>Border Color</span>
-                      <input type="color" value={logoBorderColor} onChange={(e) => setLogoBorderColor(e.target.value)} disabled={!logoImage || logoBorderWidth === 0} className="w-6 h-6 rounded-sm border-none cursor-pointer" />
+                      <input type="color" value={logoBorderColor} onChange={(e) => setLogoBorderColor(e.target.value)} disabled={!logoImage || logoBorderWidth === 0} className="w-6 h-6 rounded-md border-none cursor-pointer" />
                     </div>
                   </InputGroup>
                 </Section>
@@ -844,18 +1034,24 @@ export default function PosterEditor() {
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => setBackgroundType('original')}
-                        className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 text-xs rounded border transition-colors cursor-pointer ${backgroundType === 'original' ? 'bg-zinc-600 border-zinc-500 text-white' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700'}`}
+                        onClick={() => {
+                          setBackgroundType('original');
+                          setLogoPlateRadius(0);
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm rounded-lg border transition-colors cursor-pointer ${backgroundType === 'original' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-zinc-700 border-zinc-600 text-zinc-400 hover:bg-zinc-600'}`}
                         disabled={!logoImage}
                       >
-                        <LayoutGrid size={12} /> Original
+                        <LayoutGrid size={16} /> Original
                       </button>
                       <button
-                        onClick={() => setBackgroundType('white')}
-                        className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 text-xs rounded border transition-colors cursor-pointer ${backgroundType === 'white' ? 'bg-zinc-600 border-zinc-500 text-white' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700'}`}
+                        onClick={() => {
+                          setBackgroundType('white');
+                          setLogoPlateRadius(15);
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm rounded-lg border transition-colors cursor-pointer ${backgroundType === 'white' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-zinc-700 border-zinc-600 text-zinc-400 hover:bg-zinc-600'}`}
                         disabled={!logoImage}
                       >
-                        <Square size={12} fill="white" stroke="white" /> White Plate
+                        <Square size={16} fill="white" stroke="white" /> White Plate
                       </button>
                     </div>
                   </div>
@@ -866,7 +1062,7 @@ export default function PosterEditor() {
                     onReset={() => setLogoPlateRadius(0)}
                     isDefault={logoPlateRadius === 0}
                   >
-                    <input type="range" min="0" max="50" value={logoPlateRadius} onChange={(e) => setLogoPlateRadius(Number(e.target.value))} className="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer range-slider" disabled={!logoImage || backgroundType !== 'white'} />
+                    <input type="range" min="0" max="50" value={logoPlateRadius} onChange={(e) => setLogoPlateRadius(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage || backgroundType !== 'white'} />
                   </InputGroup>
                   <InputGroup
                     label="H-Padding"
@@ -875,7 +1071,7 @@ export default function PosterEditor() {
                     onReset={() => setLogoPlateHorizontalPadding(15)}
                     isDefault={logoPlateHorizontalPadding === 15}
                   >
-                    <input type="range" min="0" max="100" value={logoPlateHorizontalPadding} onChange={(e) => setLogoPlateHorizontalPadding(Number(e.target.value))} className="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer range-slider" disabled={!logoImage || backgroundType !== 'white'} />
+                    <input type="range" min="0" max="100" value={logoPlateHorizontalPadding} onChange={(e) => setLogoPlateHorizontalPadding(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage || backgroundType !== 'white'} />
                   </InputGroup>
                   <InputGroup
                     label="V-Padding"
@@ -884,7 +1080,7 @@ export default function PosterEditor() {
                     onReset={() => setLogoPlateVerticalPadding(15)}
                     isDefault={logoPlateVerticalPadding === 15}
                   >
-                    <input type="range" min="0" max="100" value={logoPlateVerticalPadding} onChange={(e) => setLogoPlateVerticalPadding(Number(e.target.value))} className="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer range-slider" disabled={!logoImage || backgroundType !== 'white'} />
+                    <input type="range" min="0" max="100" value={logoPlateVerticalPadding} onChange={(e) => setLogoPlateVerticalPadding(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={!logoImage || backgroundType !== 'white'} />
                   </InputGroup>
                 </Section>
               </div>
@@ -905,38 +1101,44 @@ export default function PosterEditor() {
                 initial={{ scale: 0.9, opacity: 0, y: 50 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.9, opacity: 0, y: 50 }}
-                className="bg-[#1a1b1f] rounded-lg p-6 w-96 max-w-full shadow-lg border border-zinc-700/50 flex flex-col gap-6"
+                className="bg-[#1f2024] rounded-lg p-8 w-96 max-w-full shadow-lg border border-zinc-700/50 flex flex-col gap-6"
               >
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-zinc-200">Export Options</h2>
-                  <button onClick={() => setShowExportModal(false)} className="text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer">
-                    <X size={20} />
+                  <h2 className="text-2xl font-bold text-zinc-100">Export Image</h2>
+                  <button onClick={() => setShowExportModal(false)} className="text-zinc-400 hover:text-red-500 transition-colors cursor-pointer">
+                    <X size={24} />
                   </button>
                 </div>
                 <div className="flex flex-col gap-4">
                   <div>
-                    <label className="text-sm font-medium text-zinc-300">File Format</label>
-                    <div className="flex gap-2 mt-1">
+                    <label className="text-sm font-semibold text-zinc-300">File Format</label>
+                    <div className="flex gap-3 mt-2">
                       <button
                         onClick={() => setExportSettings({ ...exportSettings, format: 'jpeg' })}
-                        className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors border cursor-pointer ${exportSettings.format === 'jpeg' ? 'bg-zinc-600 border-zinc-500 text-white' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700'}`}
+                        className={`flex-1 px-4 py-2 text-sm rounded-lg transition-colors border cursor-pointer ${exportSettings.format === 'jpeg' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-zinc-700 border-zinc-600 text-zinc-400 hover:bg-zinc-600'}`}
                       >
                         JPEG
                       </button>
                       <button
+                        onClick={() => setExportSettings({ ...exportSettings, format: 'jpg' })}
+                        className={`flex-1 px-4 py-2 text-sm rounded-lg transition-colors border cursor-pointer ${exportSettings.format === 'jpg' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-zinc-700 border-zinc-600 text-zinc-400 hover:bg-zinc-600'}`}
+                      >
+                        JPG
+                      </button>
+                      <button
                         onClick={() => setExportSettings({ ...exportSettings, format: 'png' })}
-                        className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors border cursor-pointer ${exportSettings.format === 'png' ? 'bg-zinc-600 border-zinc-500 text-white' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700'}`}
+                        className={`flex-1 px-4 py-2 text-sm rounded-lg transition-colors border cursor-pointer ${exportSettings.format === 'png' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-zinc-700 border-zinc-600 text-zinc-400 hover:bg-zinc-600'}`}
                       >
                         PNG
                       </button>
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-zinc-300">Resolution</label>
+                    <label className="text-sm font-semibold text-zinc-300">Resolution</label>
                     <select
                       value={exportSettings.resolution.name}
                       onChange={(e) => setExportSettings({ ...exportSettings, resolution: RESOLUTIONS.find(r => r.name === e.target.value) || RESOLUTIONS[0] })}
-                      className="w-full px-3 py-2 mt-1 text-sm rounded-md bg-zinc-800 border border-zinc-700 text-zinc-200 focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500 cursor-pointer"
+                      className="w-full px-4 py-2 mt-2 text-sm rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
                     >
                       {RESOLUTIONS.map((res) => (
                         <option key={res.name} value={res.name}>
@@ -945,9 +1147,21 @@ export default function PosterEditor() {
                       ))}
                     </select>
                   </div>
-                  {exportSettings.format === 'jpeg' && (
+                  <div>
+                    <label className="text-sm font-semibold text-zinc-300">DPI</label>
+                    <input
+                      type="number"
+                      min="72"
+                      max="600"
+                      step="1"
+                      value={exportSettings.dpi}
+                      onChange={(e) => setExportSettings({ ...exportSettings, dpi: Number(e.target.value) })}
+                      className="w-full px-4 py-2 mt-2 text-sm rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  {(exportSettings.format === 'jpeg' || exportSettings.format === 'jpg') && (
                     <div>
-                      <label className="text-sm font-medium text-zinc-300">Quality</label>
+                      <label className="text-sm font-semibold text-zinc-300">Quality</label>
                       <input
                         type="range"
                         min="0.1"
@@ -955,15 +1169,15 @@ export default function PosterEditor() {
                         step="0.1"
                         value={exportSettings.quality}
                         onChange={(e) => setExportSettings({ ...exportSettings, quality: Number(e.target.value) })}
-                        className="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer range-slider mt-1"
+                        className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600 mt-2"
                       />
-                      <span className="text-xs text-zinc-400 text-right block">{Math.round(exportSettings.quality * 100)}%</span>
+                      <span className="text-xs text-zinc-500 text-right block mt-1">{Math.round(exportSettings.quality * 100)}%</span>
                     </div>
                   )}
                 </div>
-                <div className="flex justify-end">
-                  <button onClick={executeExport} className="px-5 py-2 text-sm rounded-md bg-zinc-200 text-zinc-900 hover:bg-zinc-300 transition-colors font-medium cursor-pointer">
-                    Download Image
+                <div className="flex justify-end mt-4">
+                  <button onClick={executeExport} className="px-6 py-3 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium cursor-pointer shadow-md">
+                    <Download size={16} className="inline-block mr-2" /> Download Image
                   </button>
                 </div>
               </motion.div>
@@ -971,18 +1185,71 @@ export default function PosterEditor() {
           )}
         </AnimatePresence>
 
+        {/* Loading overlay */}
+        <AnimatePresence>
+        {(exportStatus !== 'idle') && (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/70 z-40 flex flex-col items-center justify-center text-white backdrop-blur-sm"
+            >
+                {exportStatus === 'loading' && (
+                    <div className="w-20 h-20 relative">
+                        <svg className="w-full h-full" viewBox="0 0 100 100">
+                            <circle className="text-zinc-300" strokeWidth="6" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" />
+                            <motion.circle
+                                className="text-blue-600"
+                                strokeWidth="6"
+                                stroke="currentColor"
+                                fill="transparent"
+                                r="40"
+                                cx="50"
+                                cy="50"
+                                style={{
+                                    rotate: -90,
+                                    originX: '50%',
+                                    originY: '50%',
+                                }}
+                                initial={{ pathLength: 0 }}
+                                animate={{ pathLength: 1 }}
+                                transition={{
+                                    duration: 1.5,
+                                    ease: 'easeInOut',
+                                    repeat: Infinity,
+                                    repeatType: 'loop',
+                                }}
+                            />
+                        </svg>
+                        <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-sm text-zinc-200">
+                           {Math.round(0)}%
+                        </span>
+                    </div>
+                )}
+                {exportStatus === 'complete' && (
+                     <div className="w-20 h-20 flex items-center justify-center">
+                        <svg className="w-full h-full text-green-500" viewBox="0 0 52 52">
+                            <circle cx="26" cy="26" r="25" fill="none" stroke="currentColor" strokeWidth="3" />
+                            <motion.path
+                                className="checkmark-animation"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="3"
+                                d="M14.1 27.2l7.1 7.2 16.7-16.8"
+                                initial={{ strokeDashoffset: 100 }}
+                                animate={{ strokeDashoffset: 0 }}
+                                transition={{ duration: 0.6 }}
+                            />
+                        </svg>
+                    </div>
+                )}
+                <span className="mt-4 text-sm font-light text-zinc-200">
+                  {exportStatus === 'loading' ? 'Generating image...' : 'Download Complete!'}
+                </span>
+            </motion.div>
+        )}
+        </AnimatePresence>
       </main>
-
-      {/* Loading overlay */}
-      {(uploading || generating) && (
-        <div className="absolute inset-0 bg-black/70 z-40 flex flex-col items-center justify-center text-white">
-          <div className="w-12 h-12 border-4 border-gray-500 border-t-zinc-200 rounded-full animate-spin"></div>
-          <span className="mt-4 text-sm font-light">
-            {uploading ? 'Loading logo...' : 'Generating image...'}
-          </span>
-        </div>
-      )}
-
     </div>
   )
 }
