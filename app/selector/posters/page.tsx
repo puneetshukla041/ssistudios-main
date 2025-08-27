@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/dashboard/Header"; // ✅ Imported Header component
-
+import Image from "next/image";
 export default function LoadingPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
@@ -14,7 +14,7 @@ export default function LoadingPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 3000);
+    }, 2000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -122,14 +122,19 @@ export default function LoadingPage() {
           ${isLoading ? "scale-95 blur-sm opacity-0" : "scale-100 blur-0 opacity-100"}
         `}
       >
-        <div className="md:w-1/2 w-full flex-shrink-0">
-          <div className="relative w-full h-auto aspect-[4/3] rounded-2xl overflow-hidden shadow-lg">
-            <img
-              src="https://placehold.co/800x600/222222/FFFFFF?text=Poster"
-              alt="Poster template"
-              className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-            />
-          </div>
+
+
+<div className="md:w-1/2 w-full flex-shrink-0">
+  <div className="relative w-full h-auto aspect-[4/3] rounded-2xl overflow-hidden shadow-lg">
+    <Image
+      src="/posters/poster1.jpg"   // ✅ public folder reference
+      alt="Poster template"
+      fill      // makes it fill parent container
+      className="object-cover transition-transform duration-300 hover:scale-105"
+    />
+  </div>
+</div>
+
         </div>
         <div className="md:w-1/2 w-full text-center md:text-left">
           <h1 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
