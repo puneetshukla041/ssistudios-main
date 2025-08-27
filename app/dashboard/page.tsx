@@ -43,7 +43,7 @@ const DesignCard = ({
       <img
         src={imageUrl}
         alt={title}
-        className="w-full h-auto rounded-t-xl object-cover transition-opacity duration-300 group-hover:opacity-80"
+        className="w-full h-auto max-w-full rounded-t-xl object-cover transition-opacity duration-300 group-hover:opacity-80"
       />
     )}
     <div className="absolute inset-0 bg-black/30 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-center justify-center">
@@ -113,8 +113,8 @@ export default function DashboardPage() {
 
       {/* --- Advanced Analytics --- */}
 <section className="mb-12">
-  <h2 className="text-xl font-semibold mb-6">Advanced Analytics</h2>
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+  <h2 className="text-xl sm:text-2xl font-semibold mb-6">Advanced Analytics</h2>
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
     <MetricCard
       title="Projects Created"
       value="0"
@@ -144,8 +144,8 @@ export default function DashboardPage() {
 
       {/* --- Quick Actions --- */}
       <section className="mb-12">
-        <h2 className="text-xl font-semibold mb-6">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <h2 className="text-xl sm:text-2xl font-semibold mb-6">Quick Actions</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <button className="flex items-center justify-center gap-2 p-4 rounded-xl bg-blue-600/30 border border-blue-400/40 shadow-md text-gray-900 font-semibold hover:bg-blue-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer">
             <Plus size={20} />
             <span>Create New Poster</span>
@@ -165,10 +165,10 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* --- Newest Templates --- */}
-      <NewTemplates />
-
-
+  {/* --- Newest Templates --- */}
+  <div className="-ml-4 sm:-ml-6 lg:-ml-12 xl:-ml-80">
+    <NewTemplates />
+  </div>
       {/* --- AI Creative --- */}
       <div className="mt-8">
         <Aicreative/>
