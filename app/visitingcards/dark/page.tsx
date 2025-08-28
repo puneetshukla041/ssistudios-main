@@ -1,225 +1,83 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas";
+import { useState, useEffect } from "react";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { Document, Page, pdfjs } from "react-pdf";
 
-export default function BusinessCardEditor() {
-  const [fullName, setFullName] = useState("");
-  const [designation, setDesignation] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
-  const previewRef1 = useRef<HTMLDivElement>(null);
-  const previewRef2 = useRef<HTMLDivElement>(null);
+export default function Editor() {
+  const [name, setName] = useState("");
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [editedPdf, setEditedPdf] = useState<Uint8Array | null>(null);
 
-  // Capitalize first letters
-  const formatFullName = (name: string) =>
-    name
-      .split(" ")
-      .map((n) => n.charAt(0).toUpperCase() + n.slice(1))
-      .join(" ");
+  // Load and edit PDF whenever name changes
+  useEffect(() => {
+    const loadPdf = async () => {
+      const existingPdfBytes = await fetch("/pdf/template.pdf").then((res) =>
+        res.arrayBuffer()
+      );
 
-  // High-resolution export
-const handleExportPDF = async () => {
-  if (!previewRef1.current || !previewRef2.current) return;
+      const pdfDoc = await PDFDocument.load(existingPdfBytes);
+      const pages = pdfDoc.getPages();
+      const secondPage = pages[1]; // page index starts at 0
+      const { height } = secondPage.getSize();
 
-  const scale = 4; // Increase this for higher resolution
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-  // Calculate PDF page size based on scaled canvas
-  const pdfWidth = 350;
-  const pdfHeight = 200;
+      if (name.trim() !== "") {
+        secondPage.drawText(name, {
+          x: 30,
+          y: height - 50,
+          size: 18,
+          font,
+          color: rgb(1, 1, 1), // white text
+        });
+      }
 
-  const pdf = new jsPDF({
-    orientation: "landscape",
-    unit: "px",
-    format: [pdfWidth, pdfHeight],
-  });
+      const pdfBytes = await pdfDoc.save();
+      setEditedPdf(pdfBytes);
+      setPdfUrl(URL.createObjectURL(new Blob([pdfBytes], { type: "application/pdf" })));
+    };
 
-  // Export first card
-  const canvas1 = await html2canvas(previewRef1.current, {
-    backgroundColor: "#1f1f1f",
-    useCORS: true,
-    scale, // high-res scale
-  });
-  const imgData1 = canvas1.toDataURL("image/png");
-  pdf.addImage(imgData1, "PNG", 0, 0, pdfWidth, pdfHeight);
+    loadPdf();
+  }, [name]);
 
-  // Export second card
-  const canvas2 = await html2canvas(previewRef2.current, {
-    backgroundColor: "#1f1f1f",
-    useCORS: true,
-    scale, // high-res scale
-  });
-  const imgData2 = canvas2.toDataURL("image/png");
-  pdf.addPage();
-  pdf.addImage(imgData2, "PNG", 0, 0, pdfWidth, pdfHeight);
-
-  pdf.save("BusinessCards.pdf");
-};
-
-
+  const handleExport = () => {
+    if (editedPdf) {
+      const blob = new Blob([editedPdf], { type: "application/pdf" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "edited.pdf";
+      link.click();
+    }
+  };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100vh",
-        padding: 16,
-        gap: 16,
-        backgroundColor: "#111111",
-        color: "#fff",
-      }}
-    >
-      {/* Left Sidebar */}
-      <div style={{ width: "25%", display: "flex", flexDirection: "column", gap: 16 }}>
-        <div>
-          <label style={{ display: "block", marginBottom: 4 }}>Full Name</label>
-          <input
-            type="text"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="John Doe"
-            style={{
-              width: "100%",
-              padding: 8,
-              borderRadius: 6,
-              border: "1px solid #444",
-              backgroundColor: "#222",
-              color: "#fff",
-            }}
-          />
-        </div>
-        <div>
-          <label style={{ display: "block", marginBottom: 4 }}>Designation</label>
-          <input
-            type="text"
-            value={designation}
-            onChange={(e) => setDesignation(e.target.value)}
-            placeholder="Software Engineer"
-            style={{
-              width: "100%",
-              padding: 8,
-              borderRadius: 6,
-              border: "1px solid #444",
-              backgroundColor: "#222",
-              color: "#fff",
-            }}
-          />
-        </div>
-        <div>
-          <label style={{ display: "block", marginBottom: 4 }}>Phone</label>
-          <input
-            type="text"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+91 12345 67890"
-            style={{
-              width: "100%",
-              padding: 8,
-              borderRadius: 6,
-              border: "1px solid #444",
-              backgroundColor: "#222",
-              color: "#fff",
-            }}
-          />
-        </div>
-        <div>
-          <label style={{ display: "block", marginBottom: 4 }}>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="email@example.com"
-            style={{
-              width: "100%",
-              padding: 8,
-              borderRadius: 6,
-              border: "1px solid #444",
-              backgroundColor: "#222",
-              color: "#fff",
-            }}
-          />
-        </div>
+    <div className="p-6 flex flex-col items-center gap-4">
+      <input
+        type="text"
+        placeholder="Enter name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="p-2 border rounded w-64"
+      />
+
+      {/* PDF Preview */}
+      <div className="border rounded-lg shadow-md w-[400px] h-[500px] overflow-auto bg-gray-900">
+        {pdfUrl && (
+          <Document file={pdfUrl}>
+            <Page pageNumber={2} width={380} />
+          </Document>
+        )}
       </div>
 
-      {/* Preview Cards */}
-      <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", gap: 16 }}>
-        {/* First Card */}
-        <div
-          ref={previewRef1}
-          style={{
-            position: "relative",
-            width: 350,
-            height: 200,
-            borderRadius: 12,
-            overflow: "hidden",
-            border: "1px solid #333",
-            backgroundColor: "#1f1f1f",
-          }}
-        >
-          <img
-            src="/visitingcards/darkpreview.jpg"
-            alt="Card 1"
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-        </div>
-
-        {/* Second Card with live text */}
-        <div
-          ref={previewRef2}
-          style={{
-            position: "relative",
-            width: 350,
-            height: 200,
-            borderRadius: 12,
-            overflow: "hidden",
-            border: "1px solid #333",
-            backgroundColor: "#1f1f1f",
-          }}
-        >
-          <img
-            src="/visitingcards/darkpreview2.jpg"
-            alt="Card 2"
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              top: 16,
-              left: 16,
-              display: "flex",
-              flexDirection: "column",
-              gap: 4,
-            }}
-          >
-            <span style={{ fontWeight: "bold", fontSize: 18, color: "#ffffff" }}>
-              {formatFullName(fullName)}
-            </span>
-            <span style={{ fontSize: 12, color: "#cccccc" }}>{designation}</span>
-            <span style={{ fontSize: 12, color: "#cccccc" }}>{phone}</span>
-            <span style={{ fontSize: 12, color: "#cccccc" }}>{email}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Sidebar */}
-      <div style={{ width: "25%", display: "flex", flexDirection: "column", gap: 16 }}>
-        <button
-          onClick={handleExportPDF}
-          style={{
-            padding: "10px 16px",
-            borderRadius: 8,
-            backgroundColor: "#1e40af",
-            color: "#fff",
-            fontWeight: 600,
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          Export Both as PDF
-        </button>
-      </div>
+      <button
+        onClick={handleExport}
+        className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow"
+      >
+        Export PDF
+      </button>
     </div>
   );
 }
