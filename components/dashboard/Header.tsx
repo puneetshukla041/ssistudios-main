@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, Mail, User, Search } from 'lucide-react'
+import { Bell, Home, User, Search } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
@@ -81,46 +81,57 @@ export default function DashboardHeader() {
             </div>
           </div>
 
-          {/* Icons Section */}
-          <div className="flex items-center gap-1 pr-2">
-            <IconWrapper label="Notifications">
-              <Bell size={20} />
-            </IconWrapper>
-            <IconWrapper label="Messages">
-              <Mail size={20} />
-            </IconWrapper>
-            <div className="w-px h-6 bg-white/20 mx-1" />
+{/* Icons Section */}
+<div className="flex items-center gap-1 pr-2">
+  <IconWrapper label="Notifications">
+    <Bell size={20} />
+  </IconWrapper>
 
-            {/* User Account Icon - Always show green dot */}
-            <Link href="/userprofile" className="relative">
-              {isExpanded ? (
-                <IconWrapper label="User Account">
-                  <User size={20} />
-                </IconWrapper>
-              ) : (
-                <User size={20} className="text-white/80" />
-              )}
+  {/* ✅ Home Icon now redirects */}
+  <Link href="/dashboard" className="relative">
+    <IconWrapper label="Home">
+      <Home size={20} />
+    </IconWrapper>
+  </Link>
 
-              {/* Small green dot with pulse */}
-              <span className="absolute top-0 right-0 block w-2 h-2 bg-green-500 border border-white rounded-full animate-ping-slow" />
-            </Link>
-          </div>
+  <div className="w-px h-6 bg-white/20 mx-1" />
+
+  {/* User Account Icon - Always show green dot */}
+  <Link href="/userprofile" className="relative">
+    {isExpanded ? (
+      <IconWrapper label="User Account">
+        <User size={20} />
+      </IconWrapper>
+    ) : (
+      <User size={20} className="text-white/80" />
+    )}
+
+    {/* Small green dot with pulse */}
+    <span className="absolute top-0 right-0 block w-2 h-2 bg-green-500 border border-white rounded-full animate-ping-slow" />
+  </Link>
+</div>
+
         </div>
 
-        {/* Collapsed State View */}
-        <div
-          className={clsx(
-            'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-5 text-white/80 transition-opacity duration-300',
-            isExpanded ? 'opacity-0' : 'opacity-100',
-            'pointer-events-none'
-          )}
-        >
-          <Search size={20} />
-          <Bell size={20} />
-          <User size={20} />
-          {/* Green dot for collapsed view */}
-          <span className="absolute top-0 right-0 block w-2 h-2 bg-green-500 border border-white rounded-full animate-ping-slow" />
-        </div>
+{/* Collapsed State View */}
+<div
+  className={clsx(
+    'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-5 text-white/80 transition-opacity duration-300',
+    isExpanded ? 'opacity-0' : 'opacity-100',
+    'pointer-events-none'
+  )}
+>
+  <Search size={20} />
+  
+  {/* ✅ Home with link */}
+  <Link href="/dashboard">
+    <Home size={20} className="cursor-pointer" />
+  </Link>
+
+  <User size={20} />
+  <span className="absolute top-0 right-0 block w-2 h-2 bg-green-500 border border-white rounded-full animate-ping-slow" />
+</div>
+
       </header>
 
       {/* Animated Gradient Background and pulse animation */}

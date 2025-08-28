@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from "next/image"
+
 import Logo from './Logo'
 import {
   Home,
@@ -126,15 +128,37 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
       `}
     >
       <div className="p-5 h-[72px] border-b border-gray-800/50 flex items-center justify-between overflow-hidden">
-        <div
-          className={`transition-opacity duration-300 ${
-            isMobile || isDesktopHovered ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          <Logo />
-        </div>
-      </div>
+<div className="flex items-center justify-center w-full relative">
+  {/* Full Logo */}
+  <div
+    className={`absolute transition-all duration-300 ${
+      isMobile || isDesktopHovered
+        ? "opacity-100 scale-100"
+        : "opacity-0 scale-95"
+    }`}
+  >
+    <Logo />
+  </div>
 
+  {/* Compact Icon Logo */}
+  <div
+    className={`absolute transition-all duration-300 ${
+      !isMobile && !isDesktopHovered
+        ? "opacity-100 scale-100"
+        : "opacity-0 scale-95"
+    }`}
+  >
+    <Image
+      src="/ssilogo.png"
+      alt="SSI Logo"
+      width={32}
+      height={32}
+      className="transition-all duration-300"
+      priority
+    />
+  </div>
+</div>
+</div>
       <nav className="flex-1 px-4 py-4 overflow-y-auto">
         {menu.map((item) => {
           if (item.mobileOnly && !isMobile) return null
@@ -310,15 +334,22 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
           isDesktopHovered ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        <div className="text-gray-500 text-xs text-center select-none">SSI STUDIOS v.1.08.25</div>
-        <button
-          onClick={handleLogout}
-          className="flex items-center justify-center gap-2 text-sm text-red-500 hover:text-red-400 transition-colors w-full py-2 rounded-lg hover:bg-red-500/10 cursor-pointer mt-3"
-          type="button"
-        >
-          <LogOut size={16} />
-          Logout
-        </button>
+<div className="text-gray-500 text-xs text-center select-none">
+  SSI STUDIOS v.1.08.25
+</div>
+<div className="text-green-500 text-xs text-center select-none">
+  Beta Version
+</div>
+
+
+<button
+  onClick={handleLogout}
+  className="flex items-center justify-center gap-2 text-sm text-red-500 hover:text-red-400 transition-colors w-full py-2 rounded-lg hover:bg-red-500/10 cursor-pointer mt-3"
+  type="button"
+>
+  Logout
+</button>
+
       </div>
     </aside>
   )

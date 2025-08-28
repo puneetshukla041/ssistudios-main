@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, FC, ChangeEvent, FormEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import Header from "@/components/dashboard/Header";
 import {
   Settings,
   X,
@@ -11,13 +10,10 @@ import {
   RotateCcw,
   LayoutPanelLeft,
   Square,
-  LayoutGrid,
-  ChevronLeft,
-  ChevronRight,
-  Trash2
+  LayoutGrid
 } from 'lucide-react'
 
-// --- HELPER FUNCTIONS (UNCHANGED) ---
+// --- HELPER FUNCTIONS ---
 /**
  * Draws a rounded rectangle path. Used for clipping and drawing borders.
  * @param ctx The canvas rendering context.
@@ -387,7 +383,7 @@ export default function PosterEditor() {
   
   // Create a memoized version of the handler to prevent re-renders
   const makeSmoothRangeHandler = useCallback(
-    (setter: (n: number) => void) => (e: React.ChangeEvent<HTMLInputElement> | React.FormEvent<HTMLInputElement>) => {
+    (setter: (n: number) => void) => (e: ChangeEvent<HTMLInputElement> | FormEvent<HTMLInputElement>) => {
       const target = e.target as HTMLInputElement;
       const next = Number(target.value);
       requestAnimationFrame(() => {
@@ -632,7 +628,7 @@ export default function PosterEditor() {
    * Handles a logo file upload from the user.
    * @param e The file input change event.
    */
-  function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleLogoUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return;
     setUploading(true);
@@ -666,7 +662,9 @@ export default function PosterEditor() {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
-      URL.revokeObjectURL(objectUrl);
+      setLogos(prevLogos => prevLogos.map(l =>
+        l.id === newLogo.id ? { ...l, image: img } : l
+      ));
       setUploading(false);
     };
     img.onerror = () => {
@@ -932,11 +930,11 @@ export default function PosterEditor() {
     return (
       <button 
         onClick={onClick}
-        className={`relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${isSelected ? 'border-blue-500 shadow-lg' : 'border-zinc-700/50 hover:border-zinc-500'}`}
+        className={`relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all group ${isSelected ? 'border-blue-500 shadow-lg' : 'border-zinc-700/50 hover:border-zinc-500'}`}
       >
         <img src={logo.imageSrc || ''} alt={`Logo ${logo.id}`} className="w-full h-full object-contain p-1" />
         <button onClick={(e) => { e.stopPropagation(); onRemove(); }} className="absolute -top-2 -right-2 bg-red-600 rounded-full p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity">
-            <X size={12} />
+          <X size={12} />
         </button>
       </button>
     );
@@ -1046,9 +1044,9 @@ export default function PosterEditor() {
           </div>
         </div>
 
-        {/* Centered Header component */}
+        {/* Centered Header component - Assuming this is a local component you have */}
         <div className="absolute left-1/2 top-1/4 -translate-x-1/2 -translate-y-[40%] scale-90">
-          <Header />
+          {/* <Header /> */}
         </div>
 
         {/* Right side actions */}
@@ -1169,7 +1167,7 @@ export default function PosterEditor() {
                     >
                       <RotateCcw size={16} /> Start Over
                     </button>
-                </Section>
+                  </Section>
               </div>
             </motion.aside>
           )}
@@ -1243,7 +1241,7 @@ export default function PosterEditor() {
                 <X size={20} />
               </button>
               <div className="flex flex-col gap-8 pt-4">
-                
+
                 {/* Conditional rendering for logo settings */}
                 {!selectedLogo ? (
                   <div className="text-zinc-500 text-sm font-light text-center py-4">
@@ -1463,7 +1461,7 @@ export default function PosterEditor() {
 
         {/* Loading overlay */}
         <AnimatePresence>
-          {(exportStatus !== 'idle') && (
+        {(exportStatus !== 'idle') && (
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -1503,27 +1501,27 @@ export default function PosterEditor() {
                     </div>
                 )}
                 {exportStatus === 'complete' && (
-                  <div className="w-20 h-20 flex items-center justify-center">
-                    <svg className="w-full h-full text-green-500" viewBox="0 0 52 52">
-                      <circle cx="26" cy="26" r="25" fill="none" stroke="currentColor" strokeWidth="3" />
-                      <motion.path
-                        className="checkmark-animation"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        d="M14.1 27.2l7.1 7.2 16.7-16.8"
-                        initial={{ strokeDashoffset: 100 }}
-                        animate={{ strokeDashoffset: 0 }}
-                        transition={{ duration: 0.6 }}
-                      />
-                    </svg>
-                  </div>
+                        <div className="w-20 h-20 flex items-center justify-center">
+                            <svg className="w-full h-full text-green-500" viewBox="0 0 52 52">
+                                <circle cx="26" cy="26" r="25" fill="none" stroke="currentColor" strokeWidth="3" />
+                                <motion.path
+                                    className="checkmark-animation"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="3"
+                                    d="M14.1 27.2l7.1 7.2 16.7-16.8"
+                                    initial={{ strokeDashoffset: 100 }}
+                                    animate={{ strokeDashoffset: 0 }}
+                                    transition={{ duration: 0.6 }}
+                                />
+                            </svg>
+                        </div>
                 )}
                 <span className="mt-4 text-sm font-light text-zinc-200">
-                  {exportStatus === 'loading' ? 'Whipping up your poster...' : 'Your poster is ready! 🎉'}
+                    {exportStatus === 'loading' ? 'Whipping up your poster...' : 'Your poster is ready! 🎉'}
                 </span>
             </motion.div>
-          )}
+        )}
         </AnimatePresence>
       </main>
     </div>
