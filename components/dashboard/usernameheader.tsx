@@ -123,7 +123,7 @@ export default function UserHeader() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6, duration: 0.8, ease: "easeOut" }}
       >
-        Let's get your creative projects started.
+        Ready to create something amazing? Choose from our professional tools and templates.
       </motion.p>
     </motion.header>
   );

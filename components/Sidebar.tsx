@@ -11,6 +11,8 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
+  HardDrive,
+  LayoutTemplate,
   LogOut,
   Layout,
 } from 'lucide-react'
@@ -71,6 +73,8 @@ const menu: MenuItem[] = [
   },
   { name: 'Logout', icon: LogOut, mobileOnly: true },
 ]
+
+
 
 // --- Sidebar Component ---
 type SidebarProps = {
@@ -238,6 +242,67 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
             </div>
           )
         })}
+{/* Storage Card - Improved UI */}
+{(isMobile || isDesktopHovered) && (
+  <div className="mx-4 mt-4 mb-2 p-4 rounded-lg bg-gray-800 border border-gray-700 shadow-md">
+    {/* Title and Icon */}
+    <div className="flex items-center gap-3">
+      <HardDrive size={20} className="text-blue-400 flex-shrink-0" />
+      <h3 className="text-sm font-semibold text-gray-200 tracking-wide">Storage Used</h3>
+    </div>
+    
+    {/* Progress Bar and Values */}
+    <div className="mt-4">
+      <div className="flex justify-between items-baseline mb-1">
+        <span className="text-lg font-bold text-white">44MB</span>
+        <span className="text-xs text-gray-400">of 500MB used</span>
+      </div>
+      <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+        <div 
+          className="h-full bg-blue-500 rounded-full transition-all duration-500 ease-in-out"
+          style={{ width: '8.8%' }}
+        />
+      </div>
+    </div>
+
+    {/* Trend Information */}
+    <div className="mt-2 text-xs font-medium flex items-center gap-1 text-green-400">
+      <span>+3 from last month</span>
+    </div>
+  </div>
+)}
+
+{/* Templates Card - Transparent & Improved Font */}
+{(isMobile || isDesktopHovered) && (
+  <div className="p-3 mt-4 rounded-lg border border-gray-700 bg-transparent flex flex-col gap-1 transition-all duration-200">
+    {/* Header: Icon + Title */}
+    <div className="flex items-center gap-2">
+      <LayoutTemplate size={18} className="text-green-500 flex-shrink-0" />
+      <span className="text-sm font-semibold text-white tracking-wide">Templates Available</span>
+    </div>
+
+    {/* Progress Bar and Values */}
+    <div className="mt-4">
+      <div className="flex justify-between items-baseline mb-1">
+        <span className="text-lg font-bold text-white">3</span>
+        <span className="text-xs text-gray-400">This month</span>
+      </div>
+      <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-green-500 rounded-full transition-all duration-500 ease-in-out"
+          style={{ width: '45%' }}
+        />
+      </div>
+    </div>
+
+    {/* Trend Information */}
+    <div className="mt-2 text-xs font-medium flex items-center gap-1 text-green-400">
+      +12 from last month
+    </div>
+  </div>
+)}
+
+
       </nav>
 
       <div
