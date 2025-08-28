@@ -2,9 +2,12 @@
 
 import { useState, useRef, useEffect, useCallback, FC, ChangeEvent, FormEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+// NOTE: The Header component was commented out due to a compilation error.
+// import Header from "@/components/dashboard/Header";
 import {
   Settings,
   X,
+  Trash2,
   PlusCircle,
   Download,
   RotateCcw,
@@ -80,6 +83,11 @@ function clipRoundedRect(
   ctx.clip();
 }
 
+type RenderedLogo = LogoState & {
+  finalWidth: number;
+  finalHeight: number;
+  transformedCanvas: HTMLCanvasElement;
+};
 
 /**
  * Fills a rounded rectangle on the canvas.
@@ -543,6 +551,87 @@ export default function PosterEditor() {
     }
   }, []);
 
+  /**
+   * A function to draw the logos onto a target canvas, either for preview or export.
+   * This centralizes the logo drawing logic.
+   */
+  const drawLogosToCanvas = useCallback((ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number) => {
+    const containerConfig = { top: 0.62, bottom: 0.76, hPadding: 0.05, vOffset: 0.05 };
+    const containerY = canvasHeight * containerConfig.top;
+    const containerHeight = canvasHeight * (containerConfig.bottom - containerConfig.top);
+    const containerX = canvasWidth * containerConfig.hPadding;
+    const containerWidth = canvasWidth * (1 - 2 * containerConfig.hPadding);
+    
+    // Use a percentage of the canvas width for spacing to ensure it scales
+    const spacing = canvasWidth * 0.02; // A fixed spacing of 2% of the canvas width
+
+    const loadedLogos = logos.filter(l => l.image);
+    if (loadedLogos.length === 0) return;
+
+    // Calculate maximum logo height to ensure they all fit within the container
+    const maxLogoHeight = containerHeight * 0.8;
+    
+    // Pre-calculate the final dimensions for each logo
+const renderedLogos: RenderedLogo[] = loadedLogos
+  .map((logo): RenderedLogo | null => {
+    const transformedCanvas = previewCanvasRefs.current[logo.id];
+    if (!transformedCanvas || !logo.image) return null;
+
+    const ratio = logo.image.width / logo.image.height;
+    const finalHeight = maxLogoHeight;
+    const finalWidth = finalHeight * ratio;
+
+    return {
+      ...logo,
+      finalWidth,
+      finalHeight,
+      transformedCanvas,
+    };
+  })
+  .filter((l): l is RenderedLogo => l !== null);
+
+
+    // Calculate the total horizontal space required for all logos and spacing
+    const totalLogosWidth = renderedLogos.reduce((acc, curr) => acc + curr.finalWidth, 0);
+    const totalSpaceWidth = (renderedLogos.length > 1) ? (spacing * (renderedLogos.length - 1)) : 0;
+    const totalContentWidth = totalLogosWidth + totalSpaceWidth;
+    
+    // Determine the overall scale factor to fit all logos and spacing in the container
+    const scaleFactor = Math.min(1, containerWidth / totalContentWidth);
+
+    let currentX = containerX + (containerWidth - totalContentWidth * scaleFactor) / 2;
+
+renderedLogos.forEach((logo: RenderedLogo) => {
+  const transformedLogoCanvas = previewCanvasRefs.current[logo.id];
+  if (!transformedLogoCanvas) return;
+
+  const finalWidth = logo.finalWidth * scaleFactor;
+  const finalHeight = logo.finalHeight * scaleFactor;
+
+  const x = currentX + (logo.logoHorizontalOffset / 100) * containerWidth;
+  const y = containerY + (containerHeight - finalHeight) / 2 + (logo.logoVerticalOffset / 100) * containerHeight;
+
+  if (logo.backgroundType === 'white') {
+    const hPadding = finalWidth * (logo.logoPlateHorizontalPadding / 100);
+    const vPadding = finalHeight * (logo.logoPlateVerticalPadding / 100);
+    const plateWidth = finalWidth + hPadding * 2;
+    const plateHeight = finalHeight + vPadding * 2;
+    const plateX = x - hPadding;
+    const plateY = y - vPadding;
+    ctx.fillStyle = 'white';
+    fillRoundedRect(ctx, plateX, plateY, plateWidth, plateHeight, logo.logoPlateRadius);
+  }
+
+  ctx.save();
+  ctx.globalCompositeOperation = logo.logoBlendMode;
+  ctx.drawImage(transformedLogoCanvas, x, y, finalWidth, finalHeight);
+  ctx.restore();
+
+  currentX += finalWidth + spacing * scaleFactor;
+});
+
+  }, [logos]);
+
   // Effect to re-draw the logo previews whenever their settings change.
   useEffect(() => {
     logos.forEach(logo => drawLogoPreview(logo));
@@ -567,62 +656,9 @@ export default function PosterEditor() {
 
     // Draw logos
     if (logos.length > 0) {
-      const containerConfig = { top: 0.62, bottom: 0.76, hPadding: 0.05, vOffset: 0.05 };
-      const containerY = previewHeight * containerConfig.top;
-      const containerHeight = previewHeight * (containerConfig.bottom - containerConfig.top);
-      const containerX = previewWidth * containerConfig.hPadding;
-      const containerWidth = previewWidth * (1 - 2 * containerConfig.hPadding);
-
-      logos.forEach((logo, index) => {
-        const transformedLogoCanvas = previewCanvasRefs.current[logo.id];
-        if (!transformedLogoCanvas) return;
-
-        const transformedLogoRenderWidth = transformedLogoCanvas.width;
-        const transformedLogoRenderHeight = transformedLogoCanvas.height;
-        const totalLogos = logos.length;
-        
-        // Calculate the target width for each logo to fit within the container
-        const spacing = 20; // pixels between logos
-        const totalLogoWidths = transformedLogoRenderWidth * totalLogos;
-        const totalSpacing = spacing * (totalLogos - 1);
-        const maxSingleLogoWidth = (containerWidth - totalSpacing) / totalLogos;
-        const maxSingleLogoHeight = containerHeight;
-        
-        const scaleFactorToFitContainer = Math.min(
-          maxSingleLogoWidth / transformedLogoRenderWidth,
-          maxSingleLogoHeight / transformedLogoRenderHeight
-        );
-        
-        const finalLogoWidth = transformedLogoRenderWidth * scaleFactorToFitContainer;
-        const finalLogoHeight = transformedLogoRenderHeight * scaleFactorToFitContainer;
-
-        const totalWidthOfAllLogos = finalLogoWidth * totalLogos + spacing * (totalLogos - 1);
-        const startX = containerX + (containerWidth - totalWidthOfAllLogos) / 2;
-        
-        let x = startX + (index * (finalLogoWidth + spacing));
-        let y = containerY + (containerHeight - finalLogoHeight) / 2;
-
-        x += (logo.logoHorizontalOffset / 100) * containerWidth;
-        y += (logo.logoVerticalOffset / 100) * containerHeight;
-
-        if (logo.backgroundType === 'white') {
-          const hPadding = finalLogoWidth * (logo.logoPlateHorizontalPadding / 100);
-          const vPadding = finalLogoHeight * (logo.logoPlateVerticalPadding / 100);
-          const plateWidth = finalLogoWidth + hPadding * 2;
-          const plateHeight = finalLogoHeight + vPadding * 2;
-          const plateX = x - hPadding;
-          const plateY = y - vPadding;
-          ctx.fillStyle = 'white';
-          fillRoundedRect(ctx, plateX, plateY, plateWidth, plateHeight, logo.logoPlateRadius);
-        }
-
-        ctx.save();
-        ctx.globalCompositeOperation = logo.logoBlendMode;
-        ctx.drawImage(transformedLogoCanvas, x, y, finalLogoWidth, finalLogoHeight);
-        ctx.restore();
-      });
+      drawLogosToCanvas(ctx, previewWidth, previewHeight);
     }
-  }, [baseImage, logos, previewWidth, previewHeight]);
+  }, [baseImage, logos, previewWidth, previewHeight, drawLogosToCanvas]);
 
   /**
    * Handles a logo file upload from the user.
@@ -646,11 +682,11 @@ export default function PosterEditor() {
       logoBlendMode: 'source-over',
       logoHorizontalOffset: 0,
       logoVerticalOffset: 0,
-      logoRadius: 0,
+      logoRadius: 20, // Default to 20px rounded corners
       backgroundType: 'original',
       logoPlateHorizontalPadding: 15,
       logoPlateVerticalPadding: 15,
-      logoPlateRadius: 0,
+      logoPlateRadius: 20, // Default to 20px rounded corners for white plate
     };
     
     setLogos(prevLogos => {
@@ -671,7 +707,7 @@ export default function PosterEditor() {
       console.error('Failed to load image. Please ensure it is a valid PNG.');
       setUploading(false);
       URL.revokeObjectURL(objectUrl);
-      setLogos(prevLogos => prevLogos.filter(logo => logo.id !== newLogo.id));
+      setLogos(prevLogos => prevLogos.filter(l => l.id !== newLogo.id));
     };
     img.src = objectUrl;
   }
@@ -710,61 +746,9 @@ export default function PosterEditor() {
     // Draw base image
     ctx.drawImage(baseImage, 0, 0, originalWidth, originalHeight);
 
-    // Draw logos
-    const containerConfig = { top: 0.62, bottom: 0.76, hPadding: 0.05, vOffset: 0.05 };
-    const containerY = originalHeight * containerConfig.top;
-    const containerHeight = originalHeight * (containerConfig.bottom - containerConfig.top);
-    const containerX = originalWidth * containerConfig.hPadding;
-    const containerWidth = originalWidth * (1 - 2 * containerConfig.hPadding);
-
-    logos.forEach((logo, index) => {
-      const transformedLogoCanvas = previewCanvasRefs.current[logo.id];
-      if (!transformedLogoCanvas) return;
-
-      const transformedLogoRenderWidth = transformedLogoCanvas.width;
-      const transformedLogoRenderHeight = transformedLogoCanvas.height;
-      const totalLogos = logos.length;
-      
-      const spacing = 20;
-      const totalLogoWidths = transformedLogoRenderWidth * totalLogos;
-      const totalSpacing = spacing * (totalLogos - 1);
-      const maxSingleLogoWidth = (containerWidth - totalSpacing) / totalLogos;
-      const maxSingleLogoHeight = containerHeight;
-      
-      const scaleFactorToFitContainer = Math.min(
-        maxSingleLogoWidth / transformedLogoRenderWidth,
-        maxSingleLogoHeight / transformedLogoRenderHeight
-      );
-      
-      const finalLogoWidth = transformedLogoRenderWidth * scaleFactorToFitContainer;
-      const finalLogoHeight = transformedLogoRenderHeight * scaleFactorToFitContainer;
-
-      const totalWidthOfAllLogos = finalLogoWidth * totalLogos + spacing * (totalLogos - 1);
-      const startX = containerX + (containerWidth - totalWidthOfAllLogos) / 2;
-      
-      let x = startX + (index * (finalLogoWidth + spacing));
-      let y = containerY + (containerHeight - finalLogoHeight) / 2;
-
-      x += (logo.logoHorizontalOffset / 100) * containerWidth;
-      y += (logo.logoVerticalOffset / 100) * containerHeight;
-
-      if (logo.backgroundType === 'white') {
-        const hPadding = finalLogoWidth * (logo.logoPlateHorizontalPadding / 100);
-        const vPadding = finalLogoHeight * (logo.logoPlateVerticalPadding / 100);
-        const plateWidth = finalLogoWidth + hPadding * 2;
-        const plateHeight = finalLogoHeight + vPadding * 2;
-        const plateX = x - hPadding;
-        const plateY = y - vPadding;
-        ctx.fillStyle = 'white';
-        fillRoundedRect(ctx, plateX, plateY, plateWidth, plateHeight, logo.logoPlateRadius);
-      }
-
-      ctx.save();
-      ctx.globalCompositeOperation = logo.logoBlendMode;
-      ctx.drawImage(transformedLogoCanvas, x, y, finalLogoWidth, finalLogoHeight);
-      ctx.restore();
-    });
-
+    // Draw logos using the unified function
+    drawLogosToCanvas(ctx, originalWidth, originalHeight);
+    
     const dataUrl = exportCanvas.toDataURL('image/png');
     const newWindow = window.open();
     if (newWindow) {
@@ -806,60 +790,8 @@ export default function PosterEditor() {
     // Draw base image
     ctx.drawImage(baseImage, 0, 0, outW, outH);
 
-    // Draw logos
-    const containerConfig = { top: 0.62, bottom: 0.76, hPadding: 0.05, vOffset: 0.05 };
-    const containerY = outH * containerConfig.top;
-    const containerHeight = outH * (containerConfig.bottom - containerConfig.top);
-    const containerX = outW * containerConfig.hPadding;
-    const containerWidth = outW * (1 - 2 * containerConfig.hPadding);
-
-    logos.forEach((logo, index) => {
-      const transformedLogoCanvas = previewCanvasRefs.current[logo.id];
-      if (!transformedLogoCanvas) return;
-
-      const transformedLogoRenderWidth = transformedLogoCanvas.width;
-      const transformedLogoRenderHeight = transformedLogoCanvas.height;
-      const totalLogos = logos.length;
-      
-      const spacing = 20;
-      const totalLogoWidths = transformedLogoRenderWidth * totalLogos;
-      const totalSpacing = spacing * (totalLogos - 1);
-      const maxSingleLogoWidth = (containerWidth - totalSpacing) / totalLogos;
-      const maxSingleLogoHeight = containerHeight;
-      
-      const scaleFactorToFitContainer = Math.min(
-        maxSingleLogoWidth / transformedLogoRenderWidth,
-        maxSingleLogoHeight / transformedLogoRenderHeight
-      );
-      
-      const finalLogoWidth = transformedLogoRenderWidth * scaleFactorToFitContainer;
-      const finalLogoHeight = transformedLogoRenderHeight * scaleFactorToFitContainer;
-
-      const totalWidthOfAllLogos = finalLogoWidth * totalLogos + spacing * (totalLogos - 1);
-      const startX = containerX + (containerWidth - totalWidthOfAllLogos) / 2;
-      
-      let x = startX + (index * (finalLogoWidth + spacing));
-      let y = containerY + (containerHeight - finalLogoHeight) / 2;
-
-      x += (logo.logoHorizontalOffset / 100) * containerWidth;
-      y += (logo.logoVerticalOffset / 100) * containerHeight;
-
-      if (logo.backgroundType === 'white') {
-        const hPadding = finalLogoWidth * (logo.logoPlateHorizontalPadding / 100);
-        const vPadding = finalLogoHeight * (logo.logoPlateVerticalPadding / 100);
-        const plateWidth = finalLogoWidth + hPadding * 2;
-        const plateHeight = finalLogoHeight + vPadding * 2;
-        const plateX = x - hPadding;
-        const plateY = y - vPadding;
-        ctx.fillStyle = 'white';
-        fillRoundedRect(ctx, plateX, plateY, plateWidth, plateHeight, logo.logoPlateRadius);
-      }
-
-      ctx.save();
-      ctx.globalCompositeOperation = logo.logoBlendMode;
-      ctx.drawImage(transformedLogoCanvas, x, y, finalLogoWidth, finalLogoHeight);
-      ctx.restore();
-    });
+    // Draw logos using the unified function
+    drawLogosToCanvas(ctx, outW, outH);
     
     const downloadFormat = exportSettings.format;
     let mimeType = `image/${downloadFormat}`;
@@ -928,15 +860,15 @@ export default function PosterEditor() {
   // A small component for the logo thumbnails in the sidebar
   const LogoThumbnail = ({ logo, isSelected, onClick, onRemove }: { logo: LogoState, isSelected: boolean, onClick: () => void, onRemove: () => void }) => {
     return (
-      <button 
+      <div 
         onClick={onClick}
-        className={`relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all group ${isSelected ? 'border-blue-500 shadow-lg' : 'border-zinc-700/50 hover:border-zinc-500'}`}
+        className={`relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all group cursor-pointer ${isSelected ? 'border-blue-500 shadow-lg' : 'border-zinc-700/50 hover:border-zinc-500'}`}
       >
         <img src={logo.imageSrc || ''} alt={`Logo ${logo.id}`} className="w-full h-full object-contain p-1" />
-        <button onClick={(e) => { e.stopPropagation(); onRemove(); }} className="absolute -top-2 -right-2 bg-red-600 rounded-full p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity">
-          <X size={12} />
+        <button onClick={(e) => { e.stopPropagation(); onRemove(); }} className="absolute inset-0 bg-black/70 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <Trash2 size={24} className="text-white" />
         </button>
-      </button>
+      </div>
     );
   };
   
@@ -966,29 +898,43 @@ export default function PosterEditor() {
           width: 16px;
           height: 16px;
           background-color: #3b82f6;
-          cursor: pointer;
+          cursor: grab;
           border-radius: 9999px;
           border: none;
           margin-top: -6px;
-          transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        input[type="range"]::-webkit-slider-thumb:hover, input[type="range"]:active::-webkit-slider-thumb {
-            transform: scale(1.25);
+        input[type="range"]::-webkit-slider-thumb:hover {
+          transform: scale(1.25);
+          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:active {
+          cursor: grabbing;
+          transform: scale(1.25);
+          box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.3);
         }
 
         input[type="range"]::-moz-range-thumb {
           width: 16px;
           height: 16px;
           background-color: #3b82f6;
-          cursor: pointer;
+          cursor: grab;
           border-radius: 9999px;
           border: none;
-          transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        input[type="range"]::-moz-range-thumb:hover, input[type="range"]:active::-moz-range-thumb {
+        input[type="range"]::-moz-range-thumb:hover {
             transform: scale(1.25);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        }
+
+        input[type="range"]::-moz-range-thumb:active {
+            cursor: grabbing;
+            transform: scale(1.25);
+            box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.3);
         }
 
         input[type="range"]::-webkit-slider-runnable-track {
@@ -1044,9 +990,9 @@ export default function PosterEditor() {
           </div>
         </div>
 
-        {/* Centered Header component - Assuming this is a local component you have */}
+        {/* Centered Header component */}
         <div className="absolute left-1/2 top-1/4 -translate-x-1/2 -translate-y-[40%] scale-90">
-          {/* <Header /> */}
+          {/* NOTE: The Header component was commented out due to a compilation error. */}
         </div>
 
         {/* Right side actions */}
@@ -1092,7 +1038,7 @@ export default function PosterEditor() {
                 
                 {/* Logo Thumbnails Section */}
                 <Section title="Your Logos (min 2, max 5)">
-                  <div className="flex gap-4 overflow-x-auto custom-scrollbar pb-2">
+                  <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar max-h-64 pr-4">
                     {logos.map(logo => (
                       <div key={logo.id} className="relative group">
                         <LogoThumbnail 
@@ -1131,16 +1077,16 @@ export default function PosterEditor() {
                         onReset={() => updateSelectedLogo({ logoZoom: 100 })}
                         isDefault={selectedLogo.logoZoom === 100}
                       >
-                        <input type="range" min="10" max="200" step="0.1" value={selectedLogo.logoZoom} onInput={handleLogoZoom} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                        <input type="range" min="10" max="200" step="0.1" value={selectedLogo.logoZoom} onInput={handleLogoZoom} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600" />
                       </InputGroup>
                       <InputGroup
                         label="Rounded Corners"
                         value={selectedLogo.logoRadius}
                         unit="px"
-                        onReset={() => updateSelectedLogo({ logoRadius: 0 })}
-                        isDefault={selectedLogo.logoRadius === 0}
+                        onReset={() => updateSelectedLogo({ logoRadius: 20 })} // Note: Default value is 20px now
+                        isDefault={selectedLogo.logoRadius === 20}
                       >
-                        <input type="range" min="0" max="50" step="0.5" value={selectedLogo.logoRadius} onInput={handleLogoRadius} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                        <input type="range" min="0" max="50" step="0.5" value={selectedLogo.logoRadius} onInput={handleLogoRadius} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600" />
                       </InputGroup>
                     </>
                   )}
@@ -1154,7 +1100,7 @@ export default function PosterEditor() {
                       disabled={logos.length < 2 || generating}
                       className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md"
                     >
-                      <Download size={16} /> Get Your Masterpiece
+                      <Download size={16} className="inline-block mr-2" /> Download Image
                     </button>
                     <input ref={fileInputRef} type="file" onChange={handleLogoUpload} accept="image/*" className="hidden" />
                   </div>
@@ -1257,7 +1203,7 @@ export default function PosterEditor() {
                         onReset={() => updateSelectedLogo({ logoHorizontalOffset: 0 })}
                         isDefault={selectedLogo.logoHorizontalOffset === 0}
                       >
-                        <input type="range" min="-50" max="50" step="0.1" value={selectedLogo.logoHorizontalOffset} onInput={handleLogoHorizontalOffset} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                        <input type="range" min="-50" max="50" step="0.1" value={selectedLogo.logoHorizontalOffset} onInput={handleLogoHorizontalOffset} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600" />
                       </InputGroup>
                       <InputGroup
                         label="Vertical"
@@ -1266,7 +1212,7 @@ export default function PosterEditor() {
                         onReset={() => updateSelectedLogo({ logoVerticalOffset: 0 })}
                         isDefault={selectedLogo.logoVerticalOffset === 0}
                       >
-                        <input type="range" min="-50" max="50" step="0.1" value={selectedLogo.logoVerticalOffset} onInput={handleLogoVerticalOffset} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                        <input type="range" min="-50" max="50" step="0.1" value={selectedLogo.logoVerticalOffset} onInput={handleLogoVerticalOffset} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600" />
                       </InputGroup>
                     </Section>
                     <div className="w-full h-px bg-zinc-700/50" />
@@ -1295,7 +1241,7 @@ export default function PosterEditor() {
                         onReset={() => updateSelectedLogo({ logoBorderWidth: 0 })}
                         isDefault={selectedLogo.logoBorderWidth === 0}
                       >
-                        <input type="range" min="0" max="20" step="0.5" value={selectedLogo.logoBorderWidth} onInput={handleLogoBorderWidth} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                        <input type="range" min="0" max="20" step="0.5" value={selectedLogo.logoBorderWidth} onInput={handleLogoBorderWidth} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600" />
                         <div className="flex items-center justify-between text-zinc-400 text-xs font-medium mt-2">
                           <span>Outline Color</span>
                           <input type="color" value={selectedLogo.logoBorderColor} onInput={(e) => updateSelectedLogo({ logoBorderColor: (e.target as HTMLInputElement).value })} disabled={selectedLogo.logoBorderWidth === 0} className="w-6 h-6 rounded-md border-none cursor-pointer" />
@@ -1314,46 +1260,57 @@ export default function PosterEditor() {
                         </div>
                         <div className="flex gap-2">
                           <button
+                            onClick={() => updateSelectedLogo({ backgroundType: 'white', logoPlateRadius: 20 })}
+                            className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm rounded-lg border transition-colors cursor-pointer ${selectedLogo.backgroundType === 'white' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-zinc-700 border-zinc-600 text-zinc-400 hover:bg-zinc-600'}`}
+                          >
+                            <Square size={16} fill="white" stroke="white" /> White Plate
+                          </button>
+                          <button
                             onClick={() => updateSelectedLogo({ backgroundType: 'original', logoPlateRadius: 0 })}
                             className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm rounded-lg border transition-colors cursor-pointer ${selectedLogo.backgroundType === 'original' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-zinc-700 border-zinc-600 text-zinc-400 hover:bg-zinc-600'}`}
                           >
                             <LayoutGrid size={16} /> Original
                           </button>
-                          <button
-                            onClick={() => updateSelectedLogo({ backgroundType: 'white', logoPlateRadius: 15 })}
-                            className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm rounded-lg border transition-colors cursor-pointer ${selectedLogo.backgroundType === 'white' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-zinc-700 border-zinc-600 text-zinc-400 hover:bg-zinc-600'}`}
-                          >
-                            <Square size={16} fill="white" stroke="white" /> White Plate
-                          </button>
                         </div>
                       </div>
-                      <InputGroup
-                        label="Plate Curvature"
-                        value={selectedLogo.logoPlateRadius}
-                        unit="px"
-                        onReset={() => updateSelectedLogo({ logoPlateRadius: 0 })}
-                        isDefault={selectedLogo.logoPlateRadius === 0}
-                      >
-                        <input type="range" min="0" max="50" step="0.5" value={selectedLogo.logoPlateRadius} onInput={handleLogoPlateRadius} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={selectedLogo.backgroundType !== 'white'} />
-                      </InputGroup>
-                      <InputGroup
-                        label="Horizontal Padding"
-                        value={selectedLogo.logoPlateHorizontalPadding}
-                        unit="%"
-                        onReset={() => updateSelectedLogo({ logoPlateHorizontalPadding: 15 })}
-                        isDefault={selectedLogo.logoPlateHorizontalPadding === 15}
-                      >
-                        <input type="range" min="0" max="100" step="0.1" value={selectedLogo.logoPlateHorizontalPadding} onInput={handleLogoPlateHorizontalPadding} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={selectedLogo.backgroundType !== 'white'} />
-                      </InputGroup>
-                      <InputGroup
-                        label="Vertical Padding"
-                        value={selectedLogo.logoPlateVerticalPadding}
-                        unit="%"
-                        onReset={() => updateSelectedLogo({ logoPlateVerticalPadding: 15 })}
-                        isDefault={selectedLogo.logoPlateVerticalPadding === 15}
-                      >
-                        <input type="range" min="0" max="100" step="0.1" value={selectedLogo.logoPlateVerticalPadding} onInput={handleLogoPlateVerticalPadding} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" disabled={selectedLogo.backgroundType !== 'white'} />
-                      </InputGroup>
+                      <AnimatePresence>
+                          {selectedLogo.backgroundType === 'white' && (
+                              <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  className="space-y-4 overflow-hidden"
+                              >
+                                  <InputGroup
+                                      label="Plate Curvature"
+                                      value={selectedLogo.logoPlateRadius}
+                                      unit="px"
+                                      onReset={() => updateSelectedLogo({ logoPlateRadius: 20 })}
+                                      isDefault={selectedLogo.logoPlateRadius === 20}
+                                  >
+                                      <input type="range" min="0" max="50" step="0.5" value={selectedLogo.logoPlateRadius} onInput={handleLogoPlateRadius} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600" />
+                                  </InputGroup>
+                                  <InputGroup
+                                      label="Horizontal Padding"
+                                      value={selectedLogo.logoPlateHorizontalPadding}
+                                      unit="%"
+                                      onReset={() => updateSelectedLogo({ logoPlateHorizontalPadding: 15 })}
+                                      isDefault={selectedLogo.logoPlateHorizontalPadding === 15}
+                                  >
+                                      <input type="range" min="0" max="100" step="0.1" value={selectedLogo.logoPlateHorizontalPadding} onInput={handleLogoPlateHorizontalPadding} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600" />
+                                  </InputGroup>
+                                  <InputGroup
+                                      label="Vertical Padding"
+                                      value={selectedLogo.logoPlateVerticalPadding}
+                                      unit="%"
+                                      onReset={() => updateSelectedLogo({ logoPlateVerticalPadding: 15 })}
+                                      isDefault={selectedLogo.logoPlateVerticalPadding === 15}
+                                  >
+                                      <input type="range" min="0" max="100" step="0.1" value={selectedLogo.logoPlateVerticalPadding} onInput={handleLogoPlateVerticalPadding} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600" />
+                                  </InputGroup>
+                              </motion.div>
+                          )}
+                      </AnimatePresence>
                     </Section>
                   </>
                 )}
@@ -1443,7 +1400,7 @@ export default function PosterEditor() {
                         step="0.1"
                         value={exportSettings.quality}
                         onInput={makeSmoothRangeHandler((n) => setExportSettings(s => ({ ...s, quality: n })))}
-                        className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600 mt-2"
+                        className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600 mt-2"
                       />
                       <span className="text-xs text-zinc-500 text-right block mt-1">{Math.round(exportSettings.quality * 100)}%</span>
                     </div>

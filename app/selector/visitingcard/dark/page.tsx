@@ -137,7 +137,7 @@ const handleUseTemplate = () => {
             {/* Corrected aspect ratio to 16:9 for proper image display */}
             <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-lg">
               <img
-                src="/posters/poster1.jpg"
+                src="/visitingcards/darkpreview.jpg"
                 alt="Poster template"
                 className="object-cover w-full h-full transition-transform duration-300 hover:scale-105"
               />
@@ -147,7 +147,7 @@ const handleUseTemplate = () => {
           {/* Right: Text + Button */}
           <div className="md:w-1/2 w-full text-center md:text-left">
             <h1 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-              Poster Template
+              Visiting card Template
             </h1>
             <p className="text-gray-400 mb-4 text-sm">
               This <span className="font-semibold">Welcome Poster</span> is designed with a 

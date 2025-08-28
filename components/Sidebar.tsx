@@ -46,7 +46,8 @@ const menu: MenuItem[] = [
     name: 'Visiting Cards',
     icon: FileText,
     children: [
-      { name: 'Choose Templates', path: '/visitingcard' },
+      { name: 'Dark Theme', path: '/selector/visitingcard/dark' },
+      { name: 'Light Theme', path: '/selector/visitingcard/light' },
     ],
   },
   {
