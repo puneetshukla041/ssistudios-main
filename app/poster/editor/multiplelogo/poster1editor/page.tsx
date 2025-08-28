@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback, FC, ChangeEvent, FormEvent } from 'react'
+import Header from "@/components/dashboard/Header";
 import { motion, AnimatePresence } from 'framer-motion'
 // NOTE: The Header component was commented out due to a compilation error.
 // import Header from "@/components/dashboard/Header";
@@ -984,16 +985,19 @@ renderedLogos.forEach((logo: RenderedLogo) => {
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
               SSI Studios
             </h1>
-            <p className="text-sm md:text-base text-zinc-400 font-medium">
-              Create. Customize. Inspire.
-            </p>
+<p className="text-xs text-zinc-400 font-medium font-asian-sans ml-1">
+  Multiple Logo Editor
+</p>
+
+
+
           </div>
         </div>
 
-        {/* Centered Header component */}
-        <div className="absolute left-1/2 top-1/4 -translate-x-1/2 -translate-y-[40%] scale-90">
-          {/* NOTE: The Header component was commented out due to a compilation error. */}
-        </div>
+{/* Centered Header component */}
+<div className="absolute left-1/2 top-1/4 -translate-x-1/2 -translate-y-[40%] scale-90">
+  <Header />
+</div>
 
         {/* Right side actions */}
         <div className="flex items-center gap-4">

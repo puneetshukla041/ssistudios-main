@@ -149,7 +149,7 @@ const handleUseTemplate = () => {
 {/* Right: Text + Button */}
 <div className="md:w-1/2 w-full text-center md:text-left">
   <h1 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-gray-800 to-black">
-    Visiting Card
+    Visiting Card(Dark Theme)
   </h1>
   <p className="text-gray-700 mb-4 text-sm leading-relaxed">
     This <span className="font-semibold text-gray-900">Visiting Card Template</span> is crafted with a clean light theme, 

@@ -887,9 +887,9 @@ export default function PosterEditor() {
       <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
         SSI Studios
       </h1>
-      <p className="text-sm md:text-base text-zinc-400 font-medium">
-        Create. Customize. Inspire.
-      </p>
+<p className="text-xs text-zinc-400 font-medium font-asian-sans ml-1">
+  Single Logo Editor
+</p>
     </div>
   </div>
 
