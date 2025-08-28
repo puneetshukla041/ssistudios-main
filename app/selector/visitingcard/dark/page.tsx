@@ -44,7 +44,7 @@ useEffect(() => {
 const handleUseTemplate = () => {
   setIsRedirecting(true);
   setTimeout(() => {
-    router.push("/poster/editor/multiplelogo/poster1editor");
+    router.push("/visitingcards/dark");
   }, 1500); // redirect after 1.5s
 };
 
@@ -145,7 +145,6 @@ const handleUseTemplate = () => {
           </div>
 
           {/* Right: Text + Button */}
-{/* Right: Text + Button */}
 {/* Right: Text + Button */}
 <div className="md:w-1/2 w-full text-center md:text-left">
   <h1 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-gray-800 to-black">

@@ -266,10 +266,9 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
               )}
             </div>
           )
-        })}
-{/* Storage Card - Improved UI */}
+        })}{/* Storage Card - Transparent */}
 {(isMobile || isDesktopHovered) && (
-  <div className="mx-4 mt-4 mb-2 p-4 rounded-lg bg-gray-800 border border-gray-700 shadow-md">
+  <div className="mx-4 mt-4 mb-2 p-4 rounded-lg border border-gray-700 bg-transparent shadow-md">
     {/* Title and Icon */}
     <div className="flex items-center gap-3">
       <HardDrive size={20} className="text-blue-400 flex-shrink-0" />
@@ -297,13 +296,13 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
   </div>
 )}
 
-{/* Templates Card - Transparent & Improved Font */}
+{/* Templates Card - Transparent */}
 {(isMobile || isDesktopHovered) && (
-  <div className="p-3 mt-4 rounded-lg border border-gray-700 bg-transparent flex flex-col gap-1 transition-all duration-200">
+  <div className="mx-4 mt-4 mb-2 p-4 rounded-lg border border-gray-700 bg-transparent shadow-md">
     {/* Header: Icon + Title */}
-    <div className="flex items-center gap-2">
-      <LayoutTemplate size={18} className="text-green-500 flex-shrink-0" />
-      <span className="text-sm font-semibold text-white tracking-wide">Templates Available</span>
+    <div className="flex items-center gap-3">
+      <LayoutTemplate size={20} className="text-green-500 flex-shrink-0" />
+      <span className="text-sm font-semibold text-gray-200 tracking-wide">Templates Available</span>
     </div>
 
     {/* Progress Bar and Values */}
@@ -326,6 +325,7 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
     </div>
   </div>
 )}
+
 
 
       </nav>
