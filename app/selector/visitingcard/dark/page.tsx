@@ -145,18 +145,23 @@ const handleUseTemplate = () => {
           </div>
 
           {/* Right: Text + Button */}
-          <div className="md:w-1/2 w-full text-center md:text-left">
-            <h1 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-              Visiting card Template
-            </h1>
-            <p className="text-gray-400 mb-4 text-sm">
-              This <span className="font-semibold">Welcome Poster</span> is designed with a 
-        modern gradient background and bold typography to make a lasting first impression.  
-        It reflects the spirit of <span className="text-blue-400">SS-Innovation</span> and 
-        <span className="text-purple-400"> collaboration</span>, making it ideal for corporate 
-        events, conferences, or workplace branding. Its clean and professional look ensures 
-        your message stands out with clarity and impact.
-            </p>
+{/* Right: Text + Button */}
+{/* Right: Text + Button */}
+<div className="md:w-1/2 w-full text-center md:text-left">
+  <h1 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-gray-800 to-black">
+    Visiting Card
+  </h1>
+  <p className="text-gray-700 mb-4 text-sm leading-relaxed">
+    This <span className="font-semibold text-gray-900">Visiting Card Template</span> is crafted with a clean light theme, 
+    subtle gradients, and professional typography. <br />
+    It highlights the essence of <span className="text-gray-900">SSI Studios</span>, blending 
+    <span className="text-gray-800"> creativity</span> and <span className="text-gray-900"> professionalism</span>. <br />
+    Perfect for business networking, corporate branding, and leaving a strong first impression with clarity and elegance.
+  </p>
+
+
+
+
             <button
               onClick={handleUseTemplate}
               // Ensured cursor-pointer class is present
