@@ -340,18 +340,15 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
       >
        
 {/* Download Desktop App Button */}
-<button
-  onClick={() => {
-    // Replace with your download link
-    window.open("https://your-download-link.com", "_blank")
-  }}
+<a
+  href="https://drive.google.com/uc?export=download&id=1wsR2aYD_iW_dFCKuP-f2IwOusziUHQiK"
+  download
   className="w-full mb-3 flex items-center justify-center gap-2 rounded-lg 
              bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 
              hover:from-gray-600 hover:via-gray-700 hover:to-gray-800
              text-gray-200 font-medium text-sm py-2.5 
              shadow-md shadow-black/30 backdrop-blur-md
              transition-all cursor-pointer active:scale-[0.97]"
-  type="button"
 >
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -368,7 +365,7 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
     />
   </svg>
   Download Desktop App
-</button>
+</a>
 
 
         <div className="text-gray-500 text-xs text-center select-none">
