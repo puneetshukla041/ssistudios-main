@@ -2,7 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Calendar, CheckCircle, Lock } from "lucide-react";
+import {
+  User,
+  Calendar,
+  CheckCircle,
+  Lock,
+  Settings,
+  Shield,
+  Bell,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface UserProfile {
@@ -30,7 +38,9 @@ export default function ProfilePage() {
         minute: "2-digit",
       };
       const date = new Date(dateString);
-      return isNaN(date.getTime()) ? "Invalid Date" : date.toLocaleDateString(undefined, options);
+      return isNaN(date.getTime())
+        ? "Invalid Date"
+        : date.toLocaleDateString(undefined, options);
     } catch {
       return "N/A";
     }
@@ -55,7 +65,8 @@ export default function ProfilePage() {
         }
 
         const response = await fetch(`/api/user?userId=${userId}`);
-        if (!response.ok) throw new Error(`Failed to fetch profile: ${response.statusText}`);
+        if (!response.ok)
+          throw new Error(`Failed to fetch profile: ${response.statusText}`);
 
         const data = await response.json();
         setProfileData(data.data);
@@ -68,11 +79,14 @@ export default function ProfilePage() {
         const tickDuration = 2000;
 
         // Wait for circle to complete, then show tick
-        setTimeout(() => {
-          setShowTick(true);
-          // Wait for tick animation to finish, then hide loading
-          setTimeout(() => setIsLoading(false), tickDuration);
-        }, circleDuration - elapsed > 0 ? circleDuration - elapsed : 0);
+        setTimeout(
+          () => {
+            setShowTick(true);
+            // Wait for tick animation to finish, then hide loading
+            setTimeout(() => setIsLoading(false), tickDuration);
+          },
+          circleDuration - elapsed > 0 ? circleDuration - elapsed : 0
+        );
       }
     }
 
@@ -156,7 +170,7 @@ export default function ProfilePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
-            className="w-full max-w-2xl p-8 rounded-2xl shadow-xl border border-gray-300 bg-transparent"
+            className="w-full max-w-4xl p-8 rounded-2xl shadow-xl border border-gray-300 bg-transparent"
           >
             <div className="text-center mb-6">
               <motion.div
@@ -173,69 +187,160 @@ export default function ProfilePage() {
               <p className="text-md text-gray-500 mt-1 font-light">Your Profile Details</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {/* Username */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* User Details */}
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
                 className="flex flex-col items-start p-4 rounded-xl shadow-md border border-blue-200 bg-transparent"
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <User size={20} className="text-blue-500" />
-                  <p className="text-xs text-gray-500 font-medium">Username</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
+                  {/* Username */}
+                  <div className="flex flex-col items-start p-4 rounded-xl shadow-md border border-blue-200 bg-transparent">
+                    <div className="flex items-center gap-2 mb-1">
+                      <User size={20} className="text-blue-500" />
+                      <p className="text-xs text-gray-500 font-medium">Username</p>
+                    </div>
+                    <p className="text-lg font-semibold text-gray-800">{profileData?.username}</p>
+                  </div>
+                  {/* Password */}
+                  <div className="flex flex-col items-start p-4 rounded-xl shadow-md border border-pink-200 bg-transparent">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Lock size={20} className="text-pink-500" />
+                      <p className="text-xs text-gray-500 font-medium">Password</p>
+                    </div>
+                    <p className="text-lg font-semibold text-gray-800">
+                      {profileData?.password || "N/A"}
+                    </p>
+                  </div>
+                  {/* Created At */}
+                  <div className="flex flex-col items-start p-4 rounded-xl shadow-md border border-green-200 bg-transparent">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar size={20} className="text-green-500" />
+                      <p className="text-xs text-gray-500 font-medium">Account Created</p>
+                    </div>
+                    <p className="text-lg font-semibold text-gray-800">
+                      {profileData?.createdAt ? formatDate(profileData.createdAt) : "N/A"}
+                    </p>
+                  </div>
+                  {/* Updated At */}
+                  <div className="flex flex-col items-start p-4 rounded-xl shadow-md border border-yellow-200 bg-transparent">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar size={20} className="text-yellow-500" />
+                      <p className="text-xs text-gray-500 font-medium">Last Updated</p>
+                    </div>
+                    <p className="text-lg font-semibold text-gray-800">
+                      {profileData?.updatedAt ? formatDate(profileData.updatedAt) : "N/A"}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-lg font-semibold text-gray-800">{profileData?.username}</p>
               </motion.div>
 
-              {/* Password */}
+              {/* Account Settings */}
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
+                className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-gray-200"
+              >
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <Settings className="w-6 h-6 text-green-600" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-800">Account Settings</h2>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-700">Email Notifications</span>
+                    <input type="checkbox" defaultChecked className="toggle" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-700">Two-Factor Authentication</span>
+                    <input type="checkbox" className="toggle" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-700">Auto-save Projects</span>
+                    <input type="checkbox" defaultChecked className="toggle" />
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Security */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, ease: "easeOut", delay: 0.4 }}
-                className="flex flex-col items-start p-4 rounded-xl shadow-md border border-pink-200 bg-transparent"
+                className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-gray-200"
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <Lock size={20} className="text-pink-500" />
-                  <p className="text-xs text-gray-500 font-medium">Password</p>
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-red-600" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-800">Security</h2>
                 </div>
-                <p className="text-lg font-semibold text-gray-800">
-                  {profileData?.password || "N/A"}
-                </p>
+                <div className="space-y-4">
+                  <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                    Change Password
+                  </button>
+                  <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                    Login History
+                  </button>
+                  <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                    Active Sessions
+                  </button>
+                </div>
               </motion.div>
 
-              {/* Created At */}
+              {/* Preferences */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: "easeOut", delay: 0.6 }}
-                className="flex flex-col items-start p-4 rounded-xl shadow-md border border-green-200 bg-transparent"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut", delay: 0.5 }}
+                className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-gray-200"
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <Calendar size={20} className="text-green-500" />
-                  <p className="text-xs text-gray-500 font-medium">Account Created</p>
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                    <Bell className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-800">Preferences</h2>
                 </div>
-                <p className="text-lg font-semibold text-gray-800">
-                  {profileData?.createdAt ? formatDate(profileData.createdAt) : "N/A"}
-                </p>
-              </motion.div>
-
-              {/* Updated At */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: "easeOut", delay: 0.8 }}
-                className="flex flex-col items-start p-4 rounded-xl shadow-md border border-yellow-200 bg-transparent"
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <Calendar size={20} className="text-yellow-500" />
-                  <p className="text-xs text-gray-500 font-medium">Last Updated</p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Language
+                    </label>
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option>English</option>
+                      <option>Spanish</option>
+                      <option>French</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Timezone
+                    </label>
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option>UTC-5 (Eastern)</option>
+                      <option>UTC-8 (Pacific)</option>
+                      <option>UTC+0 (GMT)</option>
+                    </select>
+                  </div>
                 </div>
-                <p className="text-lg font-semibold text-gray-800">
-                  {profileData?.updatedAt ? formatDate(profileData.updatedAt) : "N/A"}
-                </p>
               </motion.div>
             </div>
+
+            {/* Save Button */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.6 }}
+              className="text-center mt-12"
+            >
+              <button className="px-8 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                Save Changes
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
