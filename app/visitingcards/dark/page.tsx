@@ -156,10 +156,11 @@ export default function Editor() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#181825] text-white font-sans flex justify-center items-center p-8">
+<div className="min-h-screen w-full bg-[#161719] text-white font-sans flex justify-center items-center p-8 mt-[-32] mb-[-40] ml-12 mr-5">
+
       <div className="flex w-full max-w-[1300px] h-[90vh] gap-6">
         {/* Left form - Sidebar */}
-        <div className="w-1/4 bg-[#242436] rounded-xl shadow-lg p-6 flex flex-col gap-4 border border-[#303045] h-full">
+<div className="w-1/4 bg-[#161719] rounded-xl shadow-lg p-6 flex flex-col gap-4 border border-[#303045] h-full outline outline-white">
           <h2 className="text-xl font-bold text-[#F0F0F0] tracking-wide border-b border-[#3A3A4C] pb-3">
             Personal Details
           </h2>
@@ -221,7 +222,7 @@ export default function Editor() {
         </div>
 
         {/* Preview - Main Canvas */}
-        <div className="w-3/4 bg-[#242436] rounded-xl shadow-lg flex items-center justify-center overflow-hidden border border-[#303045] h-full">
+<div className="w-3/4 bg-[#242436] rounded-xl shadow-lg flex items-center justify-center overflow-hidden border border-[#303045] h-full outline outline outline-white">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center text-[#8888AA]">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4A90E2]"></div>
