@@ -155,75 +155,76 @@ export default function Editor() {
   return (
     <div className="min-h-screen w-full bg-[#161719] text-white font-sans flex justify-center items-center p-8 mt-[-32] mb-[-40] ml-12 mr-5">
       <div className="flex w-full max-w-[1300px] h-[90vh] gap-6">
-        {/* Left form - Sidebar */}
-        <div className="w-1/4 bg-[#161719] rounded-xl shadow-lg p-6 flex flex-col gap-4 border border-[#303045] h-full outline outline-white outline-1">
-          <h2 className="text-xl font-bold text-[#F0F0F0] tracking-wide border-b border-[#3A3A4C] pb-3">
-            Personal Details
-          </h2>
-          <div className="flex flex-col gap-4 flex-grow overflow-y-auto pr-2">
-            <InputComponent
-              label="First Name"
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Enter first name"
-              focusColor="#4A90E2"
-            />
-            <InputComponent
-              label="Last Name"
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              placeholder="Enter last name"
-              focusColor="#4A90E2"
-            />
-            <InputComponent
-              label="Designation"
-              type="text"
-              value={designation}
-              onChange={(e) => {
-                const value = e.target.value
-                  .split(" ")
-                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                  .join(" ")
-                setDesignation(value)
-              }}
-              placeholder="Enter designation"
-              focusColor="#50E3C2"
-            />
+{/* Left form - Sidebar */}
+<div className="w-2/5 bg-[#161719] rounded-xl shadow-lg p-8 flex flex-col gap-6 border border-[#303045] h-full outline outline-white outline-1">
+  <h2 className="text-2xl font-bold text-[#F0F0F0] tracking-wide border-b border-[#3A3A4C] pb-3">
+    Personal Details
+  </h2>
+  <div className="flex flex-col gap-6 flex-grow overflow-y-auto pr-2">
+    <InputComponent
+      label="First Name"
+      type="text"
+      value={firstName}
+      onChange={(e) => setFirstName(e.target.value)}
+      placeholder="Enter first name"
+      focusColor="#4A90E2"
+    />
+    <InputComponent
+      label="Last Name"
+      type="text"
+      value={lastName}
+      onChange={(e) => setLastName(e.target.value)}
+      placeholder="Enter last name"
+      focusColor="#4A90E2"
+    />
+    <InputComponent
+      label="Designation"
+      type="text"
+      value={designation}
+      onChange={(e) => {
+        const value = e.target.value
+          .split(" ")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ")
+        setDesignation(value)
+      }}
+      placeholder="Enter designation"
+      focusColor="#50E3C2"
+    />
 
-            {/* Non-editable +91 input */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-[#E0E0FF] font-medium tracking-wide">Phone Number</label>
-              <div className="flex items-center bg-[#2C2C3E] border border-[#3A3A4C] rounded-md p-2 text-sm text-[#F0F0F0] placeholder-[#8888AA]">
-                <span className="text-[#8888AA] select-none">+91-</span>
-                <input
-                  type="text"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="98765 43210"
-                  className="bg-transparent flex-1 outline-none ml-1 text-sm text-[#F0F0F0] placeholder-[#8888AA]"
-                />
-              </div>
-            </div>
+    {/* Non-editable +91 input */}
+    <div className="flex flex-col gap-1">
+      <label className="text-sm text-[#E0E0FF] font-medium tracking-wide">Phone Number</label>
+      <div className="flex items-center bg-[#2C2C3E] border border-[#3A3A4C] rounded-md p-3 text-sm text-[#F0F0F0] placeholder-[#8888AA]">
+        <span className="text-[#8888AA] select-none">+91-</span>
+        <input
+          type="text"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="98765 43210"
+          className="bg-transparent flex-1 outline-none ml-2 text-sm text-[#F0F0F0] placeholder-[#8888AA]"
+        />
+      </div>
+    </div>
 
-            <InputComponent
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="example@mail.com"
-              focusColor="#BD10E0"
-            />
-          </div>
-          <button
-            onClick={handleExport}
-            className="mt-auto w-full bg-gradient-to-r from-[#4A90E2] to-[#BD10E0] text-white text-sm font-medium py-3 rounded-md hover:scale-[1.02] transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={!previewUrl || isLoading}
-          >
-            {isLoading ? "Generating..." : "Export PDF"}
-          </button>
-        </div>
+    <InputComponent
+      label="Email"
+      type="email"
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+      placeholder="example@mail.com"
+      focusColor="#BD10E0"
+    />
+  </div>
+  <button
+    onClick={handleExport}
+    className="mt-auto w-full bg-gradient-to-r from-[#4A90E2] to-[#BD10E0] text-white text-sm font-medium py-3 rounded-md hover:scale-[1.02] transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+    disabled={!previewUrl || isLoading}
+  >
+    {isLoading ? "Generating..." : "Export PDF"}
+  </button>
+</div>
+
 
         {/* Preview - Main Canvas */}
         <div className="w-3/4 bg-[#242436] rounded-xl shadow-lg flex items-center justify-center overflow-hidden border border-[#303045] h-full outline outline-white outline-1">
