@@ -266,22 +266,24 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
               )}
             </div>
           )
-        })}{/* Storage Card - Transparent */}
+        })}
+        
+{/* Storage Card - Compact */}
 {(isMobile || isDesktopHovered) && (
-  <div className="mx-4 mt-4 mb-2 p-4 rounded-lg border border-gray-700 bg-transparent shadow-md">
+  <div className="mx-2 mt-2 mb-1 p-3 rounded-lg border border-gray-700 bg-transparent shadow-sm">
     {/* Title and Icon */}
-    <div className="flex items-center gap-3">
-      <HardDrive size={20} className="text-blue-400 flex-shrink-0" />
-      <h3 className="text-sm font-semibold text-gray-200 tracking-wide">Storage Used</h3>
+    <div className="flex items-center gap-2">
+      <HardDrive size={16} className="text-blue-400 flex-shrink-0" />
+      <h3 className="text-xs font-semibold text-gray-200 tracking-wide">Storage Used</h3>
     </div>
     
     {/* Progress Bar and Values */}
-    <div className="mt-4">
+    <div className="mt-2">
       <div className="flex justify-between items-baseline mb-1">
-        <span className="text-lg font-bold text-white">44MB</span>
-        <span className="text-xs text-gray-400">of 500MB used</span>
+        <span className="text-sm font-bold text-white">44MB</span>
+        <span className="text-[10px] text-gray-400">of 500MB used</span>
       </div>
-      <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+      <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
         <div 
           className="h-full bg-blue-500 rounded-full transition-all duration-500 ease-in-out"
           style={{ width: '8.8%' }}
@@ -290,28 +292,28 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
     </div>
 
     {/* Trend Information */}
-    <div className="mt-2 text-xs font-medium flex items-center gap-1 text-green-400">
+    <div className="mt-1 text-[10px] font-medium flex items-center gap-1 text-green-400">
       <span>+3 from last month</span>
     </div>
   </div>
 )}
 
-{/* Templates Card - Transparent */}
+{/* Templates Card - Compact */}
 {(isMobile || isDesktopHovered) && (
-  <div className="mx-4 mt-4 mb-2 p-4 rounded-lg border border-gray-700 bg-transparent shadow-md">
+  <div className="mx-2 mt-2 mb-1 p-3 rounded-lg border border-gray-700 bg-transparent shadow-sm">
     {/* Header: Icon + Title */}
-    <div className="flex items-center gap-3">
-      <LayoutTemplate size={20} className="text-green-500 flex-shrink-0" />
-      <span className="text-sm font-semibold text-gray-200 tracking-wide">Templates Available</span>
+    <div className="flex items-center gap-2">
+      <LayoutTemplate size={16} className="text-green-500 flex-shrink-0" />
+      <span className="text-xs font-semibold text-gray-200 tracking-wide">Templates Available</span>
     </div>
 
     {/* Progress Bar and Values */}
-    <div className="mt-4">
+    <div className="mt-2">
       <div className="flex justify-between items-baseline mb-1">
-        <span className="text-lg font-bold text-white">3</span>
-        <span className="text-xs text-gray-400">This month</span>
+        <span className="text-sm font-bold text-white">3</span>
+        <span className="text-[10px] text-gray-400">This month</span>
       </div>
-      <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+      <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
         <div
           className="h-full bg-green-500 rounded-full transition-all duration-500 ease-in-out"
           style={{ width: '45%' }}
@@ -320,7 +322,7 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
     </div>
 
     {/* Trend Information */}
-    <div className="mt-2 text-xs font-medium flex items-center gap-1 text-green-400">
+    <div className="mt-1 text-[10px] font-medium flex items-center gap-1 text-green-400">
       +12 from last month
     </div>
   </div>
@@ -328,30 +330,63 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
 
 
 
+
       </nav>
 
       <div
         className={`p-4 border-t border-gray-800/50 w-full mt-auto hidden lg:block transition-opacity duration-300 ${
-          isDesktopHovered ? 'opacity-100' : 'opacity-0'
+          isDesktopHovered ? "opacity-100" : "opacity-0"
         }`}
       >
-<div className="text-gray-500 text-xs text-center select-none">
-  SSI STUDIOS v.1.08.25
-</div>
-<div className="text-green-500 text-xs text-center select-none">
-  Beta Version
-</div>
-
-
+       
+{/* Download Desktop App Button */}
 <button
-  onClick={handleLogout}
-  className="flex items-center justify-center gap-2 text-sm text-red-500 hover:text-red-400 transition-colors w-full py-2 rounded-lg hover:bg-red-500/10 cursor-pointer mt-3"
+  onClick={() => {
+    // Replace with your download link
+    window.open("https://your-download-link.com", "_blank")
+  }}
+  className="w-full mb-3 flex items-center justify-center gap-2 rounded-lg 
+             bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 
+             hover:from-gray-600 hover:via-gray-700 hover:to-gray-800
+             text-gray-200 font-medium text-sm py-2.5 
+             shadow-md shadow-black/30 backdrop-blur-md
+             transition-all cursor-pointer active:scale-[0.97]"
   type="button"
 >
-  Logout
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-4 w-4"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+    />
+  </svg>
+  Download Desktop App
 </button>
 
+
+        <div className="text-gray-500 text-xs text-center select-none">
+          SSI STUDIOS v.1.08.25
+        </div>
+        <div className="text-green-500 text-xs text-center select-none">
+          Beta Version
+        </div>
+
+        <button
+          onClick={handleLogout}
+          className="flex items-center justify-center gap-2 text-sm text-red-500 hover:text-red-400 transition-colors w-full py-2 rounded-lg hover:bg-red-500/10 cursor-pointer mt-3"
+          type="button"
+        >
+          Logout
+        </button>
       </div>
+
     </aside>
   )
 
