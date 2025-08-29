@@ -1,225 +1,239 @@
-"use client";
+"use client"
 
-import React, { useState, useRef } from "react";
-import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas";
+import React, { useEffect, useState } from "react"
+import fontkit from "@pdf-lib/fontkit"
 
-export default function BusinessCardEditor() {
-  const [fullName, setFullName] = useState("");
-  const [designation, setDesignation] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
+interface InputProps {
+  label: string
+  type: string
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  placeholder: string
+  focusColor: string
+}
 
-  const previewRef1 = useRef<HTMLDivElement>(null);
-  const previewRef2 = useRef<HTMLDivElement>(null);
+const InputComponent: React.FC<InputProps> = ({
+  label,
+  type,
+  value,
+  onChange,
+  placeholder,
+  focusColor,
+}) => (
+  <div className="flex flex-col gap-1">
+    <label className="text-xs text-[#E0E0FF] font-medium tracking-wide">{label}</label>
+    <input
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      style={{ '--tw-ring-color': focusColor } as React.CSSProperties}
+      className="bg-[#2C2C3E] border border-[#3A3A4C] rounded-md p-2 text-sm text-[#F0F0F0] placeholder-[#8888AA] focus:ring-1 focus:ring-[--tw-ring-color] outline-none transition-colors duration-200 ease-in-out"
+    />
+  </div>
+)
 
-  // Capitalize first letters
-  const formatFullName = (name: string) =>
-    name
-      .split(" ")
-      .map((n) => n.charAt(0).toUpperCase() + n.slice(1))
-      .join(" ");
+export default function Editor() {
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [designation, setDesignation] = useState("")
+  const [phone, setPhone] = useState("")
+  const [email, setEmail] = useState("")
+  const [previewUrl, setPreviewUrl] = useState<string>("")
+  const [isLoading, setIsLoading] = useState(false)
 
-  // High-resolution export
-const handleExportPDF = async () => {
-  if (!previewRef1.current || !previewRef2.current) return;
+  useEffect(() => {
+    const generatePdf = async () => {
+      setIsLoading(true)
+      try {
+        const { PDFDocument, rgb } = await import("pdf-lib")
+        const existingPdfBytes = await fetch("/pdf/template.pdf").then((res) => res.arrayBuffer())
+        const pdfDoc = await PDFDocument.load(existingPdfBytes)
 
-  const scale = 4; // Increase this for higher resolution
+        // Register fontkit for custom fonts
+        pdfDoc.registerFontkit(fontkit)
 
-  // Calculate PDF page size based on scaled canvas
-  const pdfWidth = 350;
-  const pdfHeight = 200;
+        const pages = pdfDoc.getPages()
+        const secondPage = pages[1] || pages[0]
 
-  const pdf = new jsPDF({
-    orientation: "landscape",
-    unit: "px",
-    format: [pdfWidth, pdfHeight],
-  });
+        // Embed fonts
+        const poppinsSemiBoldBytes = await fetch("/fonts/Poppins-SemiBold.ttf").then((res) =>
+          res.arrayBuffer()
+        )
+        const poppinsMediumBytes = await fetch("/fonts/Poppins-Medium.ttf").then((res) =>
+          res.arrayBuffer()
+        )
 
-  // Export first card
-  const canvas1 = await html2canvas(previewRef1.current, {
-    backgroundColor: "#1f1f1f",
-    useCORS: true,
-    scale, // high-res scale
-  });
-  const imgData1 = canvas1.toDataURL("image/png");
-  pdf.addImage(imgData1, "PNG", 0, 0, pdfWidth, pdfHeight);
+        const poppinsSemiBold = await pdfDoc.embedFont(poppinsSemiBoldBytes)
+        const poppinsMedium = await pdfDoc.embedFont(poppinsMediumBytes)
 
-  // Export second card
-  const canvas2 = await html2canvas(previewRef2.current, {
-    backgroundColor: "#1f1f1f",
-    useCORS: true,
-    scale, // high-res scale
-  });
-  const imgData2 = canvas2.toDataURL("image/png");
-  pdf.addPage();
-  pdf.addImage(imgData2, "PNG", 0, 0, pdfWidth, pdfHeight);
+        let y = secondPage.getHeight() - 30
+        const x = 15
 
-  pdf.save("BusinessCards.pdf");
-};
+        const cap = (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
+        const fullName = `${cap(firstName)} ${cap(lastName)}`.trim()
 
+        // Full name in Poppins SemiBold
+        if (fullName) {
+          secondPage.drawText(fullName, {
+            x,
+            y,
+            size: 11,
+            font: poppinsSemiBold,
+            color: rgb(1, 1, 1),
+          })
+          y -= 12
+        }
 
+        // Other fields in Poppins Medium
+        const fields: {
+          text: string
+          fontSize: number
+          extraSpacing?: number
+          font?: any
+          color?: [number, number, number]
+        }[] = []
+
+        if (designation)
+          fields.push({
+            text: designation,
+            fontSize: 8,
+            extraSpacing: 25,
+            font: poppinsMedium,
+            color: [0.8, 0.8, 0.8],
+          })
+
+        if (phone)
+          fields.push({
+            text: phone,
+            fontSize: 8,
+            extraSpacing: 15,
+            font: poppinsMedium,
+            color: [0.8, 0.8, 0.8],
+          })
+
+        if (email)
+          fields.push({
+            text: email,
+            fontSize: 8,
+            extraSpacing: 11,
+            font: poppinsMedium,
+            color: [0.8, 0.8, 0.8],
+          })
+
+        fields.forEach((field) => {
+          secondPage.drawText(field.text, {
+            x,
+            y,
+            size: field.fontSize,
+            font: field.font,
+            color: rgb(...(field.color ?? [1, 1, 1])),
+          })
+          y -= field.extraSpacing ?? 11
+        })
+
+        const pdfBytes = await pdfDoc.save()
+        const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" })
+        const url = URL.createObjectURL(blob)
+        setPreviewUrl(url)
+      } catch (error) {
+        console.error("Failed to generate PDF:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    generatePdf()
+  }, [firstName, lastName, designation, phone, email])
+
+  const handleExport = () => {
+    if (previewUrl) {
+      const link = document.createElement("a")
+      link.href = previewUrl
+      link.download = "updated.pdf"
+      link.click()
+    }
+  }
 
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100vh",
-        padding: 16,
-        gap: 16,
-        backgroundColor: "#111111",
-        color: "#fff",
-      }}
-    >
-      {/* Left Sidebar */}
-      <div style={{ width: "25%", display: "flex", flexDirection: "column", gap: 16 }}>
-        <div>
-          <label style={{ display: "block", marginBottom: 4 }}>Full Name</label>
-          <input
-            type="text"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="John Doe"
-            style={{
-              width: "100%",
-              padding: 8,
-              borderRadius: 6,
-              border: "1px solid #444",
-              backgroundColor: "#222",
-              color: "#fff",
-            }}
-          />
-        </div>
-        <div>
-          <label style={{ display: "block", marginBottom: 4 }}>Designation</label>
-          <input
-            type="text"
-            value={designation}
-            onChange={(e) => setDesignation(e.target.value)}
-            placeholder="Software Engineer"
-            style={{
-              width: "100%",
-              padding: 8,
-              borderRadius: 6,
-              border: "1px solid #444",
-              backgroundColor: "#222",
-              color: "#fff",
-            }}
-          />
-        </div>
-        <div>
-          <label style={{ display: "block", marginBottom: 4 }}>Phone</label>
-          <input
-            type="text"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+91 12345 67890"
-            style={{
-              width: "100%",
-              padding: 8,
-              borderRadius: 6,
-              border: "1px solid #444",
-              backgroundColor: "#222",
-              color: "#fff",
-            }}
-          />
-        </div>
-        <div>
-          <label style={{ display: "block", marginBottom: 4 }}>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="email@example.com"
-            style={{
-              width: "100%",
-              padding: 8,
-              borderRadius: 6,
-              border: "1px solid #444",
-              backgroundColor: "#222",
-              color: "#fff",
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Preview Cards */}
-      <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", gap: 16 }}>
-        {/* First Card */}
-        <div
-          ref={previewRef1}
-          style={{
-            position: "relative",
-            width: 350,
-            height: 200,
-            borderRadius: 12,
-            overflow: "hidden",
-            border: "1px solid #333",
-            backgroundColor: "#1f1f1f",
-          }}
-        >
-          <img
-            src="/visitingcards/darkpreview.jpg"
-            alt="Card 1"
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-        </div>
-
-        {/* Second Card with live text */}
-        <div
-          ref={previewRef2}
-          style={{
-            position: "relative",
-            width: 350,
-            height: 200,
-            borderRadius: 12,
-            overflow: "hidden",
-            border: "1px solid #333",
-            backgroundColor: "#1f1f1f",
-          }}
-        >
-          <img
-            src="/visitingcards/darkpreview2.jpg"
-            alt="Card 2"
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              top: 16,
-              left: 16,
-              display: "flex",
-              flexDirection: "column",
-              gap: 4,
-            }}
-          >
-            <span style={{ fontWeight: "bold", fontSize: 18, color: "#ffffff" }}>
-              {formatFullName(fullName)}
-            </span>
-            <span style={{ fontSize: 12, color: "#cccccc" }}>{designation}</span>
-            <span style={{ fontSize: 12, color: "#cccccc" }}>{phone}</span>
-            <span style={{ fontSize: 12, color: "#cccccc" }}>{email}</span>
+    <div className="min-h-screen w-full bg-[#181825] text-white font-sans flex justify-center items-center p-8">
+      <div className="flex w-full max-w-[1300px] h-[90vh] gap-6">
+        {/* Left form - Sidebar */}
+        <div className="w-1/4 bg-[#242436] rounded-xl shadow-lg p-6 flex flex-col gap-4 border border-[#303045] h-full">
+          <h2 className="text-xl font-bold text-[#F0F0F0] tracking-wide border-b border-[#3A3A4C] pb-3">
+            Personal Details
+          </h2>
+          <div className="flex flex-col gap-4 flex-grow overflow-y-auto pr-2">
+            <InputComponent
+              label="First Name"
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="Enter first name"
+              focusColor="#4A90E2"
+            />
+            <InputComponent
+              label="Last Name"
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Enter last name"
+              focusColor="#4A90E2"
+            />
+            <InputComponent
+              label="Designation"
+              type="text"
+              value={designation}
+              onChange={(e) => {
+                const value = e.target.value
+                  .split(" ")
+                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(" ")
+                setDesignation(value)
+              }}
+              placeholder="Enter designation"
+              focusColor="#50E3C2"
+            />
+            <InputComponent
+              label="Phone Number"
+              type="text"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+91 98765 43210"
+              focusColor="#F5A623"
+            />
+            <InputComponent
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="example@mail.com"
+              focusColor="#BD10E0"
+            />
           </div>
+          <button
+            onClick={handleExport}
+            className="mt-auto w-full bg-gradient-to-r from-[#4A90E2] to-[#BD10E0] text-white text-sm font-medium py-3 rounded-md hover:scale-[1.02] transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!previewUrl || isLoading}
+          >
+            {isLoading ? "Generating..." : "Export PDF"}
+          </button>
         </div>
-      </div>
 
-      {/* Right Sidebar */}
-      <div style={{ width: "25%", display: "flex", flexDirection: "column", gap: 16 }}>
-        <button
-          onClick={handleExportPDF}
-          style={{
-            padding: "10px 16px",
-            borderRadius: 8,
-            backgroundColor: "#1e40af",
-            color: "#fff",
-            fontWeight: 600,
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          Export Both as PDF
-        </button>
+        {/* Preview - Main Canvas */}
+        <div className="w-3/4 bg-[#242436] rounded-xl shadow-lg flex items-center justify-center overflow-hidden border border-[#303045] h-full">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center text-[#8888AA]">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4A90E2]"></div>
+              <p className="mt-4 text-sm">Loading preview...</p>
+            </div>
+          ) : previewUrl ? (
+            <iframe src={previewUrl} className="w-full h-full rounded-xl" />
+          ) : (
+            <p className="text-[#8888AA] text-sm">Preview will appear here...</p>
+          )}
+        </div>
       </div>
     </div>
-  );
+  )
 }
