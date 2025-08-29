@@ -37,11 +37,12 @@ export default function Editor() {
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [designation, setDesignation] = useState("")
-  const [phone, setPhone] = useState("")
+  const [phone, setPhone] = useState("") // only number part stored
   const [email, setEmail] = useState("")
   const [previewUrl, setPreviewUrl] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
 
+  // PDF generation useEffect
   useEffect(() => {
     const generatePdf = async () => {
       setIsLoading(true)
@@ -50,13 +51,11 @@ export default function Editor() {
         const existingPdfBytes = await fetch("/pdf/template.pdf").then((res) => res.arrayBuffer())
         const pdfDoc = await PDFDocument.load(existingPdfBytes)
 
-        // Register fontkit for custom fonts
         pdfDoc.registerFontkit(fontkit)
 
         const pages = pdfDoc.getPages()
         const secondPage = pages[1] || pages[0]
 
-        // Embed fonts
         const poppinsSemiBoldBytes = await fetch("/fonts/Poppins-SemiBold.ttf").then((res) =>
           res.arrayBuffer()
         )
@@ -73,7 +72,6 @@ export default function Editor() {
         const cap = (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
         const fullName = `${cap(firstName)} ${cap(lastName)}`.trim()
 
-        // Full name in Poppins SemiBold
         if (fullName) {
           secondPage.drawText(fullName, {
             x,
@@ -85,7 +83,6 @@ export default function Editor() {
           y -= 12
         }
 
-        // Other fields in Poppins Medium
         const fields: {
           text: string
           fontSize: number
@@ -98,16 +95,16 @@ export default function Editor() {
           fields.push({
             text: designation,
             fontSize: 8,
-            extraSpacing: 25,
+            extraSpacing: 24,
             font: poppinsMedium,
             color: [0.8, 0.8, 0.8],
           })
 
         if (phone)
           fields.push({
-            text: phone,
+            text: `+91-${phone}`, // always prepend +91-
             fontSize: 8,
-            extraSpacing: 15,
+            extraSpacing: 13,
             font: poppinsMedium,
             color: [0.8, 0.8, 0.8],
           })
@@ -156,11 +153,10 @@ export default function Editor() {
   }
 
   return (
-<div className="min-h-screen w-full bg-[#161719] text-white font-sans flex justify-center items-center p-8 mt-[-32] mb-[-40] ml-12 mr-5">
-
+    <div className="min-h-screen w-full bg-[#161719] text-white font-sans flex justify-center items-center p-8 mt-[-32] mb-[-40] ml-12 mr-5">
       <div className="flex w-full max-w-[1300px] h-[90vh] gap-6">
         {/* Left form - Sidebar */}
-<div className="w-1/4 bg-[#161719] rounded-xl shadow-lg p-6 flex flex-col gap-4 border border-[#303045] h-full outline outline-white">
+        <div className="w-1/4 bg-[#161719] rounded-xl shadow-lg p-6 flex flex-col gap-4 border border-[#303045] h-full outline outline-white outline-1">
           <h2 className="text-xl font-bold text-[#F0F0F0] tracking-wide border-b border-[#3A3A4C] pb-3">
             Personal Details
           </h2>
@@ -195,14 +191,22 @@ export default function Editor() {
               placeholder="Enter designation"
               focusColor="#50E3C2"
             />
-            <InputComponent
-              label="Phone Number"
-              type="text"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+91 98765 43210"
-              focusColor="#F5A623"
-            />
+
+            {/* Non-editable +91 input */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-[#E0E0FF] font-medium tracking-wide">Phone Number</label>
+              <div className="flex items-center bg-[#2C2C3E] border border-[#3A3A4C] rounded-md p-2 text-sm text-[#F0F0F0] placeholder-[#8888AA]">
+                <span className="text-[#8888AA] select-none">+91-</span>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="98765 43210"
+                  className="bg-transparent flex-1 outline-none ml-1 text-sm text-[#F0F0F0] placeholder-[#8888AA]"
+                />
+              </div>
+            </div>
+
             <InputComponent
               label="Email"
               type="email"
@@ -222,7 +226,7 @@ export default function Editor() {
         </div>
 
         {/* Preview - Main Canvas */}
-<div className="w-3/4 bg-[#242436] rounded-xl shadow-lg flex items-center justify-center overflow-hidden border border-[#303045] h-full outline outline outline-white">
+        <div className="w-3/4 bg-[#242436] rounded-xl shadow-lg flex items-center justify-center overflow-hidden border border-[#303045] h-full outline outline-white outline-1">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center text-[#8888AA]">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4A90E2]"></div>
