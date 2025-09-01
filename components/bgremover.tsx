@@ -65,7 +65,7 @@ export default function BgRemoverFullPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gray-950 flex flex-col items-center justify-center p-4 sm:p-8 text-white font-sans">
+<div className="min-h-screen w-full flex flex-col items-center justify-center p-4 sm:p-8 text-white font-sans" style={{ backgroundColor: '#161719' }}>
       <motion.h1 
         initial={{ opacity: 0, y: -20 }} 
         animate={{ opacity: 1, y: 0 }} 
