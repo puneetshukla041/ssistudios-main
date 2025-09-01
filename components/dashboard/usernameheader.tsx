@@ -117,14 +117,35 @@ export default function UserHeader() {
         </span>
       </motion.h1>
 
-      <motion.p
-        className="text-lg text-gray-600"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6, duration: 0.8, ease: "easeOut" }}
-      >
-        Ready to create something amazing? Choose from our professional tools and templates.
-      </motion.p>
+<motion.p
+  className="text-xs sm:text-sm text-gray-700 dark:text-gray-600 leading-snug"
+  initial={{ opacity: 0, y: 8 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: 0.6, duration: 0.8, ease: 'easeOut' }}
+>
+  Ready to create something amazing? Choose from our professional tools and templates.
+</motion.p>
+
+
+<div className="flex items-center gap-8 mt-1.5">
+  {/* Left side - Status */}
+  <div className="flex items-center gap-1.5">
+    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+    <span className="text-[10px] sm:text-xs text-gray-700 dark:text-gray-600 leading-snug">
+      All systems operational
+    </span>
+  </div>
+
+  {/* Right side - Last login */}
+  <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-600 leading-snug">
+    Last login: Today
+  </span>
+</div>
+
+
+
+
+
     </motion.header>
   );
 }

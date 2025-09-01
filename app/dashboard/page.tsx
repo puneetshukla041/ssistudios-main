@@ -10,6 +10,13 @@ import {
   Sparkles,
   FileText,
   FolderOpen,
+  LayoutTemplate,
+  HardDrive,
+  Activity,
+  TrendingUp,
+  Users,
+  Clock,
+  Star,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/dashboard/Header";
@@ -58,8 +65,8 @@ const DesignCard = ({
   </div>
 );
 
-// A simple metric card component for analytics
-const MetricCard = ({
+// A simple metric card component for analytics (new smaller version)
+const SmallMetricCard = ({
   title,
   value,
   icon,
@@ -70,13 +77,21 @@ const MetricCard = ({
   icon: React.ReactNode;
   color: string;
 }) => (
-  <div
-    className={`p-4 rounded-xl shadow-md border border-gray-300 flex flex-col items-start gap-2 bg-transparent transition-transform duration-300 hover:scale-[1.03] hover:shadow-xl cursor-pointer`}
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5 }}
+    whileHover={{ y: -4 }}
+    className={`p-4 rounded-xl shadow-md border border-gray-300 flex flex-col items-start gap-2 bg-transparent transition-transform duration-300 hover:scale-[1.03] hover:shadow-xl cursor-pointer group`}
   >
-    <div className={`p-2 rounded-full text-white ${color}`}>{icon}</div>
-    <h4 className="text-xl font-bold text-gray-900 mt-2">{value}</h4>
-    <p className="text-sm text-gray-600">{title}</p>
-  </div>
+    <div className={`p-2 rounded-full bg-gray-100/50 ${color} transition-transform duration-300 group-hover:scale-110`}>
+      {icon}
+    </div>
+    <div className="space-y-1">
+      <h4 className="text-lg font-bold text-gray-900">{value}</h4>
+      <p className="text-sm text-gray-600 truncate">{title}</p>
+    </div>
+  </motion.div>
 );
 
 export default function DashboardPage() {
@@ -84,6 +99,58 @@ export default function DashboardPage() {
   const [newTemplates, setNewTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Define the new, smaller metrics
+  const metrics = [
+    {
+      title: "Active Projects",
+      value: "12",
+      icon: <FolderOpen size={20} />,
+      color: "text-blue-600",
+    },
+    {
+      title: "Templates Used",
+      value: "45",
+      icon: <LayoutTemplate size={20} />,
+      color: "text-green-600",
+    },
+    {
+      title: "Storage Used",
+      value: "2.3GB",
+      icon: <HardDrive size={20} />,
+      color: "text-orange-600",
+    },
+    {
+      title: "Recent Activity",
+      value: "8",
+      icon: <Activity size={20} />,
+      color: "text-purple-600",
+    },
+    {
+      title: "Productivity",
+      value: "+15%",
+      icon: <TrendingUp size={20} />,
+      color: "text-cyan-600",
+    },
+    {
+      title: "Collaborations",
+      value: "3",
+      icon: <Users size={20} />,
+      color: "text-yellow-600",
+    },
+    {
+      title: "Avg. Session",
+      value: "2.5h",
+      icon: <Clock size={20} />,
+      color: "text-red-600",
+    },
+    {
+      title: "Favorites",
+      value: "18",
+      icon: <Star size={20} />,
+      color: "text-pink-600",
+    },
+  ];
 
   // Fetch templates on mount
   useEffect(() => {
@@ -109,38 +176,22 @@ export default function DashboardPage() {
       <div className="my-4 cursor-pointer hidden lg:block">
         <Header />
       </div>
-      <Usernameheader/>
+      <Usernameheader />
 
       {/* --- Advanced Analytics --- */}
-<section className="mb-12">
-  <h2 className="text-xl sm:text-2xl font-semibold mb-6">Advanced Analytics</h2>
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-    <MetricCard
-      title="Projects Created"
-      value="0"
-      icon={<Sparkles size={24} className="text-yellow-500" />}
-      color="bg-yellow-100"
-    />
-    <MetricCard
-      title="Total Downloads"
-      value="0"
-      icon={<Download size={24} className="text-blue-500" />}
-      color="bg-blue-100"
-    />
-    <MetricCard
-      title="Projects Contributed"
-      value="0"
-      icon={<FolderOpen size={24} className="text-green-500" />}
-      color="bg-green-100"
-    />
-    <MetricCard
-      title="Total Uploads"
-      value="0"
-      icon={<Plus size={24} className="text-purple-500" />}
-      color="bg-purple-100"
-    />
-  </div>
-</section>
+      <section className="mb-12">
+        <h2 className="text-xl sm:text-2xl font-semibold mb-6">Advanced Analytics</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4">
+          {metrics.slice(0, 4).map((metric, index) => (
+            <SmallMetricCard key={index} {...metric} />
+          ))}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 mt-4">
+          {metrics.slice(4).map((metric, index) => (
+            <SmallMetricCard key={index + 4} {...metric} />
+          ))}
+        </div>
+      </section>
 
       {/* --- Quick Actions --- */}
       <section className="mb-12">
@@ -158,21 +209,21 @@ export default function DashboardPage() {
             <LayoutGrid size={20} />
             <span>Generate Certificates</span>
           </button>
-<button className="flex items-center justify-center gap-2 p-4 rounded-xl bg-red-600/30 border border-red-400/40 shadow-md text-gray-900 font-semibold hover:bg-red-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer">
-  <Box size={20} />
-  <span>My assets</span>
-</button>
+          <button className="flex items-center justify-center gap-2 p-4 rounded-xl bg-red-600/30 border border-red-400/40 shadow-md text-gray-900 font-semibold hover:bg-red-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer">
+            <Box size={20} />
+            <span>My assets</span>
+          </button>
         </div>
       </section>
 
-  {/* --- Newest Templates --- */}
-<div className="ml-0 sm:ml-0 lg:ml-0 xl:ml-0 my-2">
-  <NewTemplates />
-</div>
+      {/* --- Newest Templates --- */}
+      <div className="ml-0 sm:ml-0 lg:ml-0 xl:ml-0 my-2">
+        <NewTemplates />
+      </div>
 
       {/* --- AI Creative --- */}
       <div className="mt-8">
-        <Aicreative/>
+        <Aicreative />
       </div>
 
       {/* --- Footer --- */}
