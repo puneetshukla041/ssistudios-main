@@ -137,24 +137,25 @@ const DropdownButton = ({ router }: { router: any }) => {
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="absolute mt-2 w-56 bg-gray-900 border border-gray-700 rounded-xl shadow-lg flex flex-col z-50 overflow-hidden"
           >
-            <button
-              onClick={() => {
-                router.push("/selector/posters/single");
-                setOpen(false);
-              }}
-              className="px-4 py-3 text-white hover:bg-blue-600/60 transition-colors duration-200 text-left"
-            >
-              Single Logo Editor
-            </button>
-            <button
-              onClick={() => {
-                router.push("/selector/posters/multiple");
-                setOpen(false);
-              }}
-              className="px-4 py-3 text-white hover:bg-blue-600/60 transition-colors duration-200 text-left"
-            >
-              Multiple Logo Editor
-            </button>
+<button
+  onClick={() => {
+    router.push("/selector/posters/single");
+    setOpen(false);
+  }}
+  className="px-4 py-3 text-white hover:bg-blue-600/60 hover:scale-105 transform transition-all duration-200 text-left cursor-pointer"
+>
+  Single Logo Editor
+</button>
+<button
+  onClick={() => {
+    router.push("/selector/posters/multiple");
+    setOpen(false);
+  }}
+  className="px-4 py-3 text-white hover:bg-blue-600/60 hover:scale-105 transform transition-all duration-200 text-left cursor-pointer"
+>
+  Multiple Logo Editor
+</button>
+
           </motion.div>
         )}
       </AnimatePresence>
