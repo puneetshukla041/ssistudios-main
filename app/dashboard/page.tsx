@@ -242,10 +242,14 @@ const metrics = [
       <LayoutGrid size={20} />
       <span>Generate Certificates</span>
     </button>
-    <button className="flex items-center justify-center gap-2 p-4 rounded-xl bg-red-600/30 border border-red-400/40 shadow-md text-gray-900 font-semibold hover:bg-red-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer">
-      <Box size={20} />
-      <span>My assets</span>
-    </button>
+<button
+  onClick={() => window.location.href = '/bgremover'}
+  className="flex items-center justify-center gap-2 p-4 rounded-xl bg-red-600/30 border border-red-400/40 shadow-md text-gray-900 font-semibold hover:bg-red-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer"
+>
+  <Box size={20} />
+  <span>My assets</span>
+</button>
+
   </div>
 </section>
 
