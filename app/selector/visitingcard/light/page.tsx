@@ -44,7 +44,7 @@ useEffect(() => {
 const handleUseTemplate = () => {
   setIsRedirecting(true);
   setTimeout(() => {
-    router.push("/poster/editor/multiplelogo/poster1editor");
+    router.push("/visitingcards/light");
   }, 1500); // redirect after 1.5s
 };
 
