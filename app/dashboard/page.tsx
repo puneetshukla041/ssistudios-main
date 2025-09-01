@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
   LayoutGrid,
@@ -26,7 +26,6 @@ import Visitingcard from "@/components/dashboard/visitingcard";
 import Certificates from "@/components/dashboard/certificates";
 import Aicreative from "@/components/dashboard/aicreative";
 import Usernameheader from "@/components/dashboard/usernameheader";
-// Import useRouter to use Next.js's router
 import { useRouter } from "next/navigation";
 
 // Define the shape of a template object from the database
@@ -87,7 +86,6 @@ const SmallMetricCard = ({
     whileHover={{ y: -4 }}
     className={`relative p-4 rounded-xl shadow-md border border-gray-300 flex flex-col items-start gap-2 bg-transparent transition-transform duration-300 hover:scale-[1.03] hover:shadow-xl cursor-pointer group`}
   >
-    {/* Green small bar for Storage Used */}
     {title === "Storage Used" && (
       <div className="absolute top-2 right-2 bg-green-400 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full shadow">
         8.8% used
@@ -105,63 +103,83 @@ const SmallMetricCard = ({
   </motion.div>
 );
 
+// Dropdown button component
+const DropdownButton = ({ router }: { router: any }) => {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setOpen((prev) => !prev)}
+        className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-blue-600/30 border border-blue-400/40 shadow-md text-gray-900 font-semibold hover:bg-blue-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer"
+      >
+        <Plus size={20} />
+        <span>Create New Poster</span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="absolute mt-2 w-56 bg-gray-900 border border-gray-700 rounded-xl shadow-lg flex flex-col z-50 overflow-hidden"
+          >
+            <button
+              onClick={() => {
+                router.push("/selector/posters/single");
+                setOpen(false);
+              }}
+              className="px-4 py-3 text-white hover:bg-blue-600/60 transition-colors duration-200 text-left"
+            >
+              Single Logo Editor
+            </button>
+            <button
+              onClick={() => {
+                router.push("/selector/posters/multiple");
+                setOpen(false);
+              }}
+              className="px-4 py-3 text-white hover:bg-blue-600/60 transition-colors duration-200 text-left"
+            >
+              Multiple Logo Editor
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const [newTemplates, setNewTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [open, setOpen] = useState(false); // State for the dropdown menu
 
-  // Initialize the router hook
   const router = useRouter();
 
-  // Metrics array (unchanged except Storage Used will show badge automatically)
   const metrics = [
-    {
-      title: "Total Active Projects",
-      value: "3",
-      icon: <FolderOpen size={20} />,
-      color: "text-blue-600",
-    },
-    {
-      title: "Total Templates",
-      value: "5",
-      icon: <LayoutTemplate size={20} />,
-      color: "text-green-600",
-    },
-    {
-      title: "Storage Used",
-      value: "44MB",
-      icon: <HardDrive size={20} />,
-      color: "text-orange-600",
-    },
-    {
-      title: "Recent Activity",
-      value: "0",
-      icon: <Activity size={20} />,
-      color: "text-purple-600",
-    },
-    {
-      title: "Your Exports",
-      value: "0",
-      icon: <TrendingUp size={20} />,
-      color: "text-cyan-600",
-    },
-    {
-      title: "Total Members",
-      value: "7",
-      icon: <Users size={20} />,
-      color: "text-yellow-600",
-    },
-    {
-      title: " Your Avg. Session",
-      value: "0h",
-      icon: <Clock size={20} />,
-      color: "text-red-600",
-    },
+    { title: "Total Active Projects", value: "3", icon: <FolderOpen size={20} />, color: "text-blue-600" },
+    { title: "Total Templates", value: "5", icon: <LayoutTemplate size={20} />, color: "text-green-600" },
+    { title: "Storage Used", value: "44MB", icon: <HardDrive size={20} />, color: "text-orange-600" },
+    { title: "Recent Activity", value: "0", icon: <Activity size={20} />, color: "text-purple-600" },
+    { title: "Your Exports", value: "0", icon: <TrendingUp size={20} />, color: "text-cyan-600" },
+    { title: "Total Members", value: "7", icon: <Users size={20} />, color: "text-yellow-600" },
+    { title: " Your Avg. Session", value: "0h", icon: <Clock size={20} />, color: "text-red-600" },
   ];
 
-  // Fetch templates on mount
   useEffect(() => {
     async function fetchTemplates() {
       try {
@@ -181,59 +199,26 @@ export default function DashboardPage() {
 
   return (
     <main className="flex-1 min-h-screen px-4 sm:px-6 lg:px-12 xl:px-20 transition-all duration-300 bg-transparent text-gray-900">
-      {/* --- Header --- */}
       <div className="my-4 cursor-pointer hidden lg:block">
         <Header />
       </div>
       <Usernameheader />
 
-      {/* --- Advanced Analytics --- */}
       <section className="mb-12">
         <h2 className="text-xl sm:text-2xl font-semibold mb-6">Advanced Analytics</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4">
-          {metrics.slice(0, 4).map((metric, index) => (
-            <SmallMetricCard key={index} {...metric} />
-          ))}
+          {metrics.slice(0, 4).map((metric, index) => <SmallMetricCard key={index} {...metric} />)}
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 mt-4">
-          {metrics.slice(4).map((metric, index) => (
-            <SmallMetricCard key={index + 4} {...metric} />
-          ))}
+          {metrics.slice(4).map((metric, index) => <SmallMetricCard key={index + 4} {...metric} />)}
         </div>
       </section>
 
-      {/* --- Quick Actions --- */}
       <section className="mb-20">
         <h2 className="text-xl sm:text-2xl font-semibold mb-6">Quick Actions</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {/* Create New Poster with dropdown */}
-          <div className="relative inline-block">
-            <button
-              onClick={() => setOpen((prev) => !prev)}
-              className="flex items-center justify-center gap-2 p-4 rounded-xl bg-blue-600/30 border border-blue-400/40 shadow-md text-gray-900 font-semibold hover:bg-blue-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer"
-            >
-              <Plus size={20} />
-              <span>Create New Poster</span>
-            </button>
-            {open && (
-              <div className="absolute mt-2 w-56 bg-gray-900 border border-gray-700 rounded-xl shadow-lg flex flex-col z-50">
-                <button
-                  onClick={() => { router.push("/selector/posters/single"); setOpen(false); }}
-                  className="px-4 py-3 text-white hover:bg-blue-600/50 rounded-t-xl text-left transition-all"
-                >
-                  Single Logo Editor
-                </button>
-                <button
-                  onClick={() => { router.push("/selector/posters/multiple"); setOpen(false); }}
-                  className="px-4 py-3 text-white hover:bg-blue-600/50 rounded-b-xl text-left transition-all"
-                >
-                  Multiple Logo Editor
-                </button>
-              </div>
-            )}
-          </div>
+          <DropdownButton router={router} />
 
-          {/* Generate Visiting Card */}
           <button
             onClick={() => router.push("/selector/visitingcard")}
             className="flex items-center justify-center gap-2 p-4 rounded-xl bg-purple-600/30 border border-purple-400/40 shadow-md text-gray-900 font-semibold hover:bg-purple-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer"
@@ -242,7 +227,6 @@ export default function DashboardPage() {
             <span>Generate Visiting Card</span>
           </button>
 
-          {/* Generate Certificates */}
           <button
             onClick={() => router.push("/selector/certificate")}
             className="flex items-center justify-center gap-2 p-4 rounded-xl bg-teal-600/30 border border-teal-400/40 shadow-md text-gray-900 font-semibold hover:bg-teal-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer"
@@ -251,7 +235,6 @@ export default function DashboardPage() {
             <span>Generate Certificates</span>
           </button>
 
-          {/* Background Remover */}
           <button
             onClick={() => router.push("/bgremover")}
             className="flex items-center justify-center gap-2 p-4 rounded-xl bg-red-600/30 border border-red-400/40 shadow-md text-gray-900 font-semibold hover:bg-red-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer"
@@ -262,28 +245,22 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* --- Newest Templates --- */}
       <div className="mt-1 px-3 sm:px-4 lg:px-6">
         <NewTemplates />
       </div>
 
-      {/* --- visiting card Templates --- */}
-      <div className="mt-[-70] px-3 sm:px-4 lg:px-6">
+      <div className="mt-[-70px] px-3 sm:px-4 lg:px-6">
         <Visitingcard />
       </div>
 
-      {/* --- Certificates --- */}
       <div className="mt-20 px-3 sm:px-4 lg:px-6">
         <Certificates />
       </div>
 
-
-      {/* --- AI Creative --- */}
       <div className="mt-8">
         <Aicreative />
       </div>
 
-      {/* --- Footer --- */}
       <Footer />
     </main>
   );
