@@ -270,20 +270,20 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
         
 {/* Storage Card - Compact */}
 {(isMobile || isDesktopHovered) && (
-  <div className="mx-2 mt-2 mb-1 p-3 rounded-lg border border-gray-700 bg-transparent shadow-sm">
+  <div className="mx-2 mt-2 mb-1 p-2.5 rounded-lg border border-gray-700/40 bg-gray-900/30 shadow-sm backdrop-blur-sm">
     {/* Title and Icon */}
-    <div className="flex items-center gap-2">
-      <HardDrive size={16} className="text-blue-400 flex-shrink-0" />
-      <h3 className="text-xs font-semibold text-gray-200 tracking-wide">Storage Used</h3>
+    <div className="flex items-center gap-1.5">
+      <HardDrive size={14} className="text-blue-400/90 flex-shrink-0" />
+      <h3 className="text-[11px] font-medium text-gray-200">Storage Used</h3>
     </div>
     
     {/* Progress Bar and Values */}
-    <div className="mt-2">
-      <div className="flex justify-between items-baseline mb-1">
-        <span className="text-sm font-bold text-white">44MB</span>
-        <span className="text-[10px] text-gray-400">of 500MB used</span>
+    <div className="mt-1.5">
+      <div className="flex justify-between items-baseline mb-0.5">
+        <span className="text-sm font-semibold text-white">44MB</span>
+        <span className="text-[9px] text-gray-400">of 500MB</span>
       </div>
-      <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+      <div className="w-full h-1 bg-gray-700/60 rounded-full overflow-hidden">
         <div 
           className="h-full bg-blue-500 rounded-full transition-all duration-500 ease-in-out"
           style={{ width: '8.8%' }}
@@ -292,7 +292,7 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
     </div>
 
     {/* Trend Information */}
-    <div className="mt-1 text-[10px] font-medium flex items-center gap-1 text-green-400">
+    <div className="mt-1 text-[9px] font-medium flex items-center gap-1 text-green-400/90">
       <span>+3 from last month</span>
     </div>
   </div>
@@ -300,20 +300,20 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
 
 {/* Templates Card - Compact */}
 {(isMobile || isDesktopHovered) && (
-  <div className="mx-2 mt-2 mb-1 p-3 rounded-lg border border-gray-700 bg-transparent shadow-sm">
+  <div className="mx-2 mt-2 mb-1 p-2.5 rounded-lg border border-gray-700/40 bg-gray-900/30 shadow-sm backdrop-blur-sm">
     {/* Header: Icon + Title */}
-    <div className="flex items-center gap-2">
-      <LayoutTemplate size={16} className="text-green-500 flex-shrink-0" />
-      <span className="text-xs font-semibold text-gray-200 tracking-wide">Templates Available</span>
+    <div className="flex items-center gap-1.5">
+      <LayoutTemplate size={14} className="text-green-500/90 flex-shrink-0" />
+      <span className="text-[11px] font-medium text-gray-200">Templates</span>
     </div>
 
     {/* Progress Bar and Values */}
-    <div className="mt-2">
-      <div className="flex justify-between items-baseline mb-1">
-        <span className="text-sm font-bold text-white">3</span>
-        <span className="text-[10px] text-gray-400">This month</span>
+    <div className="mt-1.5">
+      <div className="flex justify-between items-baseline mb-0.5">
+        <span className="text-sm font-semibold text-white">3</span>
+        <span className="text-[9px] text-gray-400">This month</span>
       </div>
-      <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+      <div className="w-full h-1 bg-gray-700/60 rounded-full overflow-hidden">
         <div
           className="h-full bg-green-500 rounded-full transition-all duration-500 ease-in-out"
           style={{ width: '45%' }}
@@ -322,11 +322,12 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
     </div>
 
     {/* Trend Information */}
-    <div className="mt-1 text-[10px] font-medium flex items-center gap-1 text-green-400">
+    <div className="mt-1 text-[9px] font-medium flex items-center gap-1 text-green-400/90">
       +12 from last month
     </div>
   </div>
 )}
+
 
 
 

@@ -100,52 +100,89 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Define the new, smaller metrics
-  const metrics = [
-    {
-      title: "Total Active Projects",
-      value: "3",
-      icon: <FolderOpen size={20} />,
-      color: "text-blue-600",
-    },
-    {
-      title: "Total Templates",
-      value: "5",
-      icon: <LayoutTemplate size={20} />,
-      color: "text-green-600",
-    },
-    {
-      title: "Storage Used",
-      value: "44MB",
-      icon: <HardDrive size={20} />,
-      color: "text-orange-600",
-    },
-    {
-      title: "Recent Activity",
-      value: "8",
-      icon: <Activity size={20} />,
-      color: "text-purple-600",
-    },
-    {
-      title: "Your Exports",
-      value: "0",
-      icon: <TrendingUp size={20} />,
-      color: "text-cyan-600",
-    },
-    {
-      title: "Total Members",
-      value: "7",
-      icon: <Users size={20} />,
-      color: "text-yellow-600",
-    },
-    {
-      title: " Your Avg. Session",
-      value: "0h",
-      icon: <Clock size={20} />,
-      color: "text-red-600",
-    },
+// A simple metric card component for analytics (new smaller version)
+const SmallMetricCard = ({
+  title,
+  value,
+  icon,
+  color,
+}: {
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+  color: string;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5 }}
+    whileHover={{ y: -4 }}
+    className={`relative p-4 rounded-xl shadow-md border border-gray-300 flex flex-col items-start gap-2 bg-transparent transition-transform duration-300 hover:scale-[1.03] hover:shadow-xl cursor-pointer group`}
+  >
+    {/* Green small bar for Storage Used */}
+    {title === "Storage Used" && (
+      <div className="absolute top-2 right-2 bg-green-400 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full shadow">
+        8.8% used
+      </div>
+    )}
+    <div
+      className={`p-2 rounded-full bg-gray-100/50 ${color} transition-transform duration-300 group-hover:scale-110`}
+    >
+      {icon}
+    </div>
+    <div className="space-y-1">
+      <h4 className="text-lg font-bold text-gray-900">{value}</h4>
+      <p className="text-sm text-gray-600 truncate">{title}</p>
+    </div>
+  </motion.div>
+);
 
-  ];
+// Metrics array (unchanged except Storage Used will show badge automatically)
+const metrics = [
+  {
+    title: "Total Active Projects",
+    value: "3",
+    icon: <FolderOpen size={20} />,
+    color: "text-blue-600",
+  },
+  {
+    title: "Total Templates",
+    value: "5",
+    icon: <LayoutTemplate size={20} />,
+    color: "text-green-600",
+  },
+  {
+    title: "Storage Used",
+    value: "44MB",
+    icon: <HardDrive size={20} />,
+    color: "text-orange-600",
+  },
+  {
+    title: "Recent Activity",
+    value: "0",
+    icon: <Activity size={20} />,
+    color: "text-purple-600",
+  },
+  {
+    title: "Your Exports",
+    value: "0",
+    icon: <TrendingUp size={20} />,
+    color: "text-cyan-600",
+  },
+  {
+    title: "Total Members",
+    value: "7",
+    icon: <Users size={20} />,
+    color: "text-yellow-600",
+  },
+  {
+    title: " Your Avg. Session",
+    value: "0h",
+    icon: <Clock size={20} />,
+    color: "text-red-600",
+  },
+];
+
 
   // Fetch templates on mount
   useEffect(() => {
@@ -224,5 +261,11 @@ export default function DashboardPage() {
       {/* --- Footer --- */}
       <Footer />
     </main>
+
   );
 }
+
+
+
+
+
