@@ -7,13 +7,17 @@ import ClientRootLayout from './ClientRootLayout';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'SSI Studios Dashboard',
+  title: 'SSI Studios',
   description: 'Automated poster creation system for SSI design team',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        {/* Favicon */}
+        <link rel="icon" href="/ssilogo.png" />
+      </head>
       <body className={inter.className}>
         {/* ClientRootLayout now supports both Cherry Blossom and Anime video background */}
         <ClientRootLayout>{children}</ClientRootLayout>
