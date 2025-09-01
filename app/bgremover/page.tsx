@@ -2,8 +2,7 @@ import ImageSelector from "@/components/bgremover";
 
 export default function ImagePage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4">
-      <h1 className="text-2xl font-bold mb-4">Image Background Remover</h1>
+    <main className="min-h-screen w-full bg-[#161719] text-white font-sans flex justify-center items-center p-8 mt-[-32] mb-[-40] ml-12 mr-5">
       <ImageSelector />
     </main>
   );
