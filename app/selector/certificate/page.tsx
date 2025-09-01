@@ -44,7 +44,7 @@ useEffect(() => {
 const handleUseTemplate = () => {
   setIsRedirecting(true);
   setTimeout(() => {
-    router.push("/visitingcards/dark");
+    router.push("/certificates/training");
   }, 1500); // redirect after 1.5s
 };
 
@@ -123,15 +123,18 @@ const handleUseTemplate = () => {
       {/* --- Main Content --- */}
       {/* Changed justify-end to justify-start and added horizontal padding */}
       <div className="w-full max-w-6xl mx-auto flex justify-start pl-8">
-        <div
-          className={`
-            w-full max-w-4xl bg-white/5 rounded-3xl p-8 shadow-2xl mt-8 md:mt-20
-            flex flex-col md:flex-row items-center gap-8
-            backdrop-blur-lg border-4 border-white/20 hover:border-white/40 transition-all duration-300
-            transform transition-all duration-1000 ease-in-out hover:scale-[1.01]
-            ${isLoading ? "scale-95 blur-sm opacity-0" : "scale-100 blur-0 opacity-100"}
-          `}
-        >
+<div
+  className={`
+    w-full max-w-4xl bg-white/5 rounded-3xl p-8 shadow-2xl mt-8 md:mt-20
+    flex flex-col md:flex-row items-center gap-8
+    backdrop-blur-lg border-4 border-white/20 hover:border-white/40 transition-all duration-300
+    transform transition-all duration-1000 ease-in-out hover:scale-[1.01]
+    -ml-4 md:ml-18   /* mobile = small left shift, desktop = proper margin */
+  `}
+>
+
+
+
           {/* Left: Poster Preview */}
           <div className="md:w-1/2 w-full flex-shrink-0">
             {/* Corrected aspect ratio to 16:9 for proper image display */}
@@ -159,8 +162,6 @@ const handleUseTemplate = () => {
     Provided by <span className="text-gray-900">Sudhir Srivastava Innovations Pvt. Ltd.</span>, this certification 
     highlights expertise, precision, and professional achievement.
   </p>
-
-
 
 
             <button
