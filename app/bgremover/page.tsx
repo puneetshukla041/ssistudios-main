@@ -1,4 +1,4 @@
-import ImageSelector from "@/components/ImageSelector";
+import ImageSelector from "@/components/bgremover";
 
 export default function ImagePage() {
   return (
