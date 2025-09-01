@@ -13,6 +13,7 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
+  FileImage,
   HardDrive,
   LayoutTemplate,
   LogOut,
@@ -33,7 +34,18 @@ type MenuItem = {
 
 // (Menu data remains the same)
 const menu: MenuItem[] = [
+  
+  
   { name: 'Dashboard', icon: Home, path: '/dashboard' },
+
+    {
+    name: 'Bg Remover',
+    icon: FileImage,
+    path: "/bgremover",
+
+  },
+
+
   {
     name: 'Posters',
     icon: Layout,
@@ -84,6 +96,12 @@ type SidebarProps = {
   forceActive?: string
   isOpen: boolean
   toggleSidebar: () => void
+}
+interface MenuItemProps {
+  name: string;
+  icon: any;
+  path: string;
+  isNew?: boolean;
 }
 
 export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarProps) {
@@ -162,6 +180,7 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
 </div>
       <nav className="flex-1 px-4 py-4 overflow-y-auto">
         {menu.map((item) => {
+          
           if (item.mobileOnly && !isMobile) return null
 
           const Icon = item.icon
@@ -169,6 +188,7 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
           const active = isParentActive(item)
 
           return (
+            
             <div key={item.name} className="mb-1.5">
               <button
                 // 4. Update the onClick handler for navigation
@@ -194,12 +214,7 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
                 `}
                 type="button"
               >
-                <div
-                  className={`absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full transition-opacity duration-300 ${
-                    active ? 'opacity-100 bg-white shadow-glow' : 'opacity-0'
-                  }`}
-                />
-                <div className="flex items-center gap-3 overflow-hidden">
+                <div className="relative flex items-center gap-3 overflow-hidden">
                   <Icon
                     size={18}
                     className={`transition-colors flex-shrink-0 ${
@@ -213,7 +228,19 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
                   >
                     {item.name}
                   </span>
+
+
+
+
                 </div>
+
+
+                <div
+                  className={`absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full transition-opacity duration-300 ${
+                    active ? 'opacity-100 bg-white shadow-glow' : 'opacity-0'
+                  }`}
+                />
+
                 {item.children &&
                   (isMobile || isDesktopHovered ? (
                     isOpenMenuItem ? (
@@ -339,17 +366,17 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
           isDesktopHovered ? "opacity-100" : "opacity-0"
         }`}
       >
-       
+        
 {/* Download Desktop App Button */}
 <a
   href="https://drive.google.com/uc?export=download&id=1wsR2aYD_iW_dFCKuP-f2IwOusziUHQiK"
   download
   className="w-full mb-3 flex items-center justify-center gap-2 rounded-lg 
-             bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 
-             hover:from-gray-600 hover:via-gray-700 hover:to-gray-800
-             text-gray-200 font-medium text-sm py-2.5 
-             shadow-md shadow-black/30 backdrop-blur-md
-             transition-all cursor-pointer active:scale-[0.97]"
+              bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 
+              hover:from-gray-600 hover:via-gray-700 hover:to-gray-800
+              text-gray-200 font-medium text-sm py-2.5 
+              shadow-md shadow-black/30 backdrop-blur-md
+              transition-all cursor-pointer active:scale-[0.97]"
 >
   <svg
     xmlns="http://www.w3.org/2000/svg"
