@@ -79,58 +79,139 @@ export default function LoginPage() {
           </motion.div>
         )}
 
-        {/* Green tick */}
-        {showTick && (
-          <motion.div
-            className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="text-center"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1.5 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            >
-              <svg className="w-16 h-16 text-green-500 mx-auto" viewBox="0 0 24 24" fill="none">
-                <motion.path
-                  d="M5 13l4 4L19 7"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  initial={{ pathLength: 0 }}
-                  animate={{ pathLength: 1 }}
-                  transition={{ duration: 0.7 }}
-                />
-              </svg>
-              <p className="text-green-500 font-semibold mt-2">Success!</p>
-            </motion.div>
-          </motion.div>
-        )}
+{/* Green tick with celebration */}
+{showTick && (
+<motion.div
+  className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center"
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  exit={{ opacity: 0 }}
+>
+  {/* Circular Badge */}
+  <motion.div
+    className="relative flex flex-col items-center justify-center 
+               rounded-full bg-white shadow-2xl 
+               w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56"
+    initial={{ scale: 0 }}
+    animate={{ scale: 1 }}
+    transition={{ type: "spring", stiffness: 200, damping: 20 }}
+  >
+    {/* Confetti burst */}
+    <AnimatePresence>
+      {[...Array(14)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-400"
+          initial={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+          animate={{
+            opacity: 0,
+            x: Math.cos((i / 14) * 2 * Math.PI) * 100,
+            y: Math.sin((i / 14) * 2 * Math.PI) * 100,
+            scale: 0.5,
+          }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+        />
+      ))}
+    </AnimatePresence>
 
-        {/* Welcome username */}
-        {showWelcome && (
-          <motion.div
-            className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center shadow-2xl"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15 }}
-            >
-              <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">
-                Welcome, {username}!
-              </h2>
-              <p className="text-gray-600 dark:text-gray-300">Glad to see you back.</p>
-            </motion.div>
-          </motion.div>
-        )}
+    {/* Tick icon */}
+    <svg
+      className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 text-green-500 relative z-10"
+      viewBox="0 0 24 24"
+      fill="none"
+    >
+      <motion.path
+        d="M5 13l4 4L19 7"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 0.8, ease: "easeInOut" }}
+      />
+    </svg>
+
+    {/* Success text */}
+    <p className="text-green-600 font-bold mt-3 text-base sm:text-lg md:text-xl tracking-wide relative z-10">
+      Success!
+    </p>
+  </motion.div>
+</motion.div>
+
+)}
+
+{/* Welcome username */}
+{showWelcome && (
+  <motion.div
+    className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center overflow-hidden"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+  >
+    {/* Animated glowing background */}
+    <motion.div
+      className="absolute w-[500px] h-[500px] rounded-full bg-gradient-to-r from-green-400/40 via-blue-400/30 to-purple-400/40 blur-3xl"
+      initial={{ scale: 0.8, opacity: 0.5 }}
+      animate={{ scale: [0.9, 1.1, 0.9], opacity: [0.3, 0.6, 0.3] }}
+      transition={{ duration: 8, repeat: Infinity }}
+    />
+
+    {/* Confetti burst */}
+    <AnimatePresence>
+      {[...Array(14)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-2 h-2 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400"
+          initial={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+          animate={{
+            opacity: 0,
+            x: Math.cos((i / 14) * 2 * Math.PI) * 200,
+            y: Math.sin((i / 14) * 2 * Math.PI) * 200,
+            scale: 0.5,
+          }}
+          transition={{ duration: 1.8, ease: "easeOut" }}
+        />
+      ))}
+    </AnimatePresence>
+
+    {/* Welcome Card */}
+    <motion.div
+      className="relative bg-white dark:bg-gray-800 rounded-2xl p-10 text-center shadow-2xl border border-white/20"
+      initial={{ scale: 0.5, rotate: -10, opacity: 0 }}
+      animate={{ scale: 1, rotate: 0, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 200, damping: 15 }}
+    >
+      {/* Username with shimmer underline */}
+      <motion.h2
+        className="text-3xl font-extrabold mb-3 text-gray-900 dark:text-gray-100 relative inline-block"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.6 }}
+      >
+        Welcome,&nbsp;{username}!
+        <motion.span
+          className="absolute left-0 -bottom-1 w-full h-1 bg-gradient-to-r from-green-400 to-blue-500 rounded-full"
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+        />
+      </motion.h2>
+
+      {/* Subtext */}
+      <motion.p
+        className="text-gray-600 dark:text-gray-300 text-lg"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.5, duration: 0.6 }}
+      >
+        Glad to see you back 
+      </motion.p>
+    </motion.div>
+  </motion.div>
+)}
+
+
       </AnimatePresence>
 
       {/* Login Card */}
@@ -195,17 +276,18 @@ export default function LoginPage() {
             />
           </div>
 
-          <button
-            type="submit"
-            className="w-full bg-black text-white py-2.5 rounded-lg font-medium
-                       hover:bg-gray-800 transition-colors
-                       disabled:opacity-50 disabled:cursor-not-allowed
-                       md:bg-gray-800/40 md:border md:border-gray-700/50 md:hover:bg-gray-700/50 md:shadow-inner
-                       transition-all duration-200"
-            disabled={isLoading || showTick || showWelcome}
-          >
-            {isLoading ? "Logging in..." : "Login"}
-          </button>
+<button
+  type="submit"
+  className="w-full bg-black text-white py-2.5 rounded-lg font-medium
+             hover:bg-gray-800 transition-colors
+             disabled:opacity-50 disabled:cursor-not-allowed
+             md:bg-gray-800/40 md:border md:border-gray-700/50 md:hover:bg-gray-700/50 md:shadow-inner
+             transition-all duration-200 cursor-pointer" // ✅ added this
+  disabled={isLoading || showTick || showWelcome}
+>
+  {isLoading ? "Logging in..." : "Login"}
+</button>
+
         </form>
       </div>
     </div>
