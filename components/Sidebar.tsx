@@ -54,7 +54,7 @@ const menu: MenuItem[] = [
     name: 'Certificates',
     icon: Layers,
     children: [
-      { name: 'Certificate Generator', path: '/certificates/generator' },
+      { name: 'Certificate Generator', path: '/selector/certificate' },
       { name: 'Saved Certificates', path: '/certificates/saved' },
     ],
   },
