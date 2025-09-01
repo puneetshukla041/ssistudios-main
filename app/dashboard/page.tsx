@@ -25,7 +25,9 @@ import NewTemplates from "@/components/dashboard/Newtemplates";
 import Visitingcard from "@/components/dashboard/visitingcard";
 import Certificates from "@/components/dashboard/certificates";
 import Aicreative from "@/components/dashboard/aicreative";
-import Usernameheader from "@/components/dashboard/usernameheader"; // Import your new component
+import Usernameheader from "@/components/dashboard/usernameheader";
+// Import useRouter to use Next.js's router
+import { useRouter } from "next/navigation";
 
 // Define the shape of a template object from the database
 interface Template {
@@ -83,41 +85,6 @@ const SmallMetricCard = ({
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5 }}
     whileHover={{ y: -4 }}
-    className={`p-4 rounded-xl shadow-md border border-gray-300 flex flex-col items-start gap-2 bg-transparent transition-transform duration-300 hover:scale-[1.03] hover:shadow-xl cursor-pointer group`}
-  >
-    <div className={`p-2 rounded-full bg-gray-100/50 ${color} transition-transform duration-300 group-hover:scale-110`}>
-      {icon}
-    </div>
-    <div className="space-y-1">
-      <h4 className="text-lg font-bold text-gray-900">{value}</h4>
-      <p className="text-sm text-gray-600 truncate">{title}</p>
-    </div>
-  </motion.div>
-);
-
-export default function DashboardPage() {
-  const { user } = useAuth();
-  const [newTemplates, setNewTemplates] = useState<Template[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-// A simple metric card component for analytics (new smaller version)
-const SmallMetricCard = ({
-  title,
-  value,
-  icon,
-  color,
-}: {
-  title: string;
-  value: string;
-  icon: React.ReactNode;
-  color: string;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5 }}
-    whileHover={{ y: -4 }}
     className={`relative p-4 rounded-xl shadow-md border border-gray-300 flex flex-col items-start gap-2 bg-transparent transition-transform duration-300 hover:scale-[1.03] hover:shadow-xl cursor-pointer group`}
   >
     {/* Green small bar for Storage Used */}
@@ -138,52 +105,61 @@ const SmallMetricCard = ({
   </motion.div>
 );
 
-// Metrics array (unchanged except Storage Used will show badge automatically)
-const metrics = [
-  {
-    title: "Total Active Projects",
-    value: "3",
-    icon: <FolderOpen size={20} />,
-    color: "text-blue-600",
-  },
-  {
-    title: "Total Templates",
-    value: "5",
-    icon: <LayoutTemplate size={20} />,
-    color: "text-green-600",
-  },
-  {
-    title: "Storage Used",
-    value: "44MB",
-    icon: <HardDrive size={20} />,
-    color: "text-orange-600",
-  },
-  {
-    title: "Recent Activity",
-    value: "0",
-    icon: <Activity size={20} />,
-    color: "text-purple-600",
-  },
-  {
-    title: "Your Exports",
-    value: "0",
-    icon: <TrendingUp size={20} />,
-    color: "text-cyan-600",
-  },
-  {
-    title: "Total Members",
-    value: "7",
-    icon: <Users size={20} />,
-    color: "text-yellow-600",
-  },
-  {
-    title: " Your Avg. Session",
-    value: "0h",
-    icon: <Clock size={20} />,
-    color: "text-red-600",
-  },
-];
+export default function DashboardPage() {
+  const { user } = useAuth();
+  const [newTemplates, setNewTemplates] = useState<Template[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false); // State for the dropdown menu
 
+  // Initialize the router hook
+  const router = useRouter();
+
+  // Metrics array (unchanged except Storage Used will show badge automatically)
+  const metrics = [
+    {
+      title: "Total Active Projects",
+      value: "3",
+      icon: <FolderOpen size={20} />,
+      color: "text-blue-600",
+    },
+    {
+      title: "Total Templates",
+      value: "5",
+      icon: <LayoutTemplate size={20} />,
+      color: "text-green-600",
+    },
+    {
+      title: "Storage Used",
+      value: "44MB",
+      icon: <HardDrive size={20} />,
+      color: "text-orange-600",
+    },
+    {
+      title: "Recent Activity",
+      value: "0",
+      icon: <Activity size={20} />,
+      color: "text-purple-600",
+    },
+    {
+      title: "Your Exports",
+      value: "0",
+      icon: <TrendingUp size={20} />,
+      color: "text-cyan-600",
+    },
+    {
+      title: "Total Members",
+      value: "7",
+      icon: <Users size={20} />,
+      color: "text-yellow-600",
+    },
+    {
+      title: " Your Avg. Session",
+      value: "0h",
+      icon: <Clock size={20} />,
+      color: "text-red-600",
+    },
+  ];
 
   // Fetch templates on mount
   useEffect(() => {
@@ -226,47 +202,81 @@ const metrics = [
         </div>
       </section>
 
-{/* --- Quick Actions --- */}
-<section className="mb-20">   {/* increased from mb-12 to mb-16 */}
-  <h2 className="text-xl sm:text-2xl font-semibold mb-6">Quick Actions</h2>
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-    <button className="flex items-center justify-center gap-2 p-4 rounded-xl bg-blue-600/30 border border-blue-400/40 shadow-md text-gray-900 font-semibold hover:bg-blue-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer">
-      <Plus size={20} />
-      <span>Create New Poster</span>
-    </button>
-    <button className="flex items-center justify-center gap-2 p-4 rounded-xl bg-purple-600/30 border border-purple-400/40 shadow-md text-gray-900 font-semibold hover:bg-purple-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer">
-      <FileText size={20} />
-      <span>Generate Visiting Card</span>
-    </button>
-    <button className="flex items-center justify-center gap-2 p-4 rounded-xl bg-teal-600/30 border border-teal-400/40 shadow-md text-gray-900 font-semibold hover:bg-teal-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer">
-      <LayoutGrid size={20} />
-      <span>Generate Certificates</span>
-    </button>
-<button
-  onClick={() => window.location.href = '/bgremover'}
-  className="flex items-center justify-center gap-2 p-4 rounded-xl bg-red-600/30 border border-red-400/40 shadow-md text-gray-900 font-semibold hover:bg-red-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer"
->
-  <Box size={20} />
-  <span>My assets</span>
-</button>
+      {/* --- Quick Actions --- */}
+      <section className="mb-20">
+        <h2 className="text-xl sm:text-2xl font-semibold mb-6">Quick Actions</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {/* Create New Poster with dropdown */}
+          <div className="relative inline-block">
+            <button
+              onClick={() => setOpen((prev) => !prev)}
+              className="flex items-center justify-center gap-2 p-4 rounded-xl bg-blue-600/30 border border-blue-400/40 shadow-md text-gray-900 font-semibold hover:bg-blue-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer"
+            >
+              <Plus size={20} />
+              <span>Create New Poster</span>
+            </button>
+            {open && (
+              <div className="absolute mt-2 w-56 bg-gray-900 border border-gray-700 rounded-xl shadow-lg flex flex-col z-50">
+                <button
+                  onClick={() => { router.push("/selector/posters/single"); setOpen(false); }}
+                  className="px-4 py-3 text-white hover:bg-blue-600/50 rounded-t-xl text-left transition-all"
+                >
+                  Single Logo Editor
+                </button>
+                <button
+                  onClick={() => { router.push("/selector/posters/multiple"); setOpen(false); }}
+                  className="px-4 py-3 text-white hover:bg-blue-600/50 rounded-b-xl text-left transition-all"
+                >
+                  Multiple Logo Editor
+                </button>
+              </div>
+            )}
+          </div>
 
-  </div>
-</section>
+          {/* Generate Visiting Card */}
+          <button
+            onClick={() => router.push("/selector/visitingcard")}
+            className="flex items-center justify-center gap-2 p-4 rounded-xl bg-purple-600/30 border border-purple-400/40 shadow-md text-gray-900 font-semibold hover:bg-purple-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer"
+          >
+            <FileText size={20} />
+            <span>Generate Visiting Card</span>
+          </button>
 
-{/* --- Newest Templates --- */}
-<div className="mt-10 px-3 sm:px-4 lg:px-6">   {/* added mt-10 for more separation */}
-  <NewTemplates />
-</div>
+          {/* Generate Certificates */}
+          <button
+            onClick={() => router.push("/selector/certificate")}
+            className="flex items-center justify-center gap-2 p-4 rounded-xl bg-teal-600/30 border border-teal-400/40 shadow-md text-gray-900 font-semibold hover:bg-teal-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer"
+          >
+            <LayoutGrid size={20} />
+            <span>Generate Certificates</span>
+          </button>
 
-{/* --- visiting card Templates --- */}
-<div className="mt-0 px-3 sm:px-4 lg:px-6">   {/* added mt-10 for more separation */}
-  <Visitingcard/>
-</div>
+          {/* Background Remover */}
+          <button
+            onClick={() => router.push("/bgremover")}
+            className="flex items-center justify-center gap-2 p-4 rounded-xl bg-red-600/30 border border-red-400/40 shadow-md text-gray-900 font-semibold hover:bg-red-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer"
+          >
+            <Box size={20} />
+            <span>Background Remover</span>
+          </button>
+        </div>
+      </section>
 
-{/* --- visiting card Templates --- */}
-<div className="mt-35 px-3 sm:px-4 lg:px-6">   {/* added mt-10 for more separation */}
-  <Certificates/>
-</div>
+      {/* --- Newest Templates --- */}
+      <div className="mt-1 px-3 sm:px-4 lg:px-6">
+        <NewTemplates />
+      </div>
+
+      {/* --- visiting card Templates --- */}
+      <div className="mt-[-70] px-3 sm:px-4 lg:px-6">
+        <Visitingcard />
+      </div>
+
+      {/* --- Certificates --- */}
+      <div className="mt-20 px-3 sm:px-4 lg:px-6">
+        <Certificates />
+      </div>
+
 
       {/* --- AI Creative --- */}
       <div className="mt-8">
@@ -276,11 +286,5 @@ const metrics = [
       {/* --- Footer --- */}
       <Footer />
     </main>
-
   );
 }
-
-
-
-
-
