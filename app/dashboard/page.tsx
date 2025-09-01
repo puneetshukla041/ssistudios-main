@@ -22,7 +22,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/dashboard/Header";
 import Footer from "@/components/dashboard/Footer";
 import NewTemplates from "@/components/dashboard/Newtemplates";
-
+import Visitingcard from "@/components/dashboard/visitingcard";
+import Certificates from "@/components/dashboard/certificates";
 import Aicreative from "@/components/dashboard/aicreative";
 import Usernameheader from "@/components/dashboard/usernameheader"; // Import your new component
 
@@ -225,33 +226,43 @@ const metrics = [
         </div>
       </section>
 
-      {/* --- Quick Actions --- */}
-      <section className="mb-12">
-        <h2 className="text-xl sm:text-2xl font-semibold mb-6">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <button className="flex items-center justify-center gap-2 p-4 rounded-xl bg-blue-600/30 border border-blue-400/40 shadow-md text-gray-900 font-semibold hover:bg-blue-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer">
-            <Plus size={20} />
-            <span>Create New Poster</span>
-          </button>
-          <button className="flex items-center justify-center gap-2 p-4 rounded-xl bg-purple-600/30 border border-purple-400/40 shadow-md text-gray-900 font-semibold hover:bg-purple-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer">
-            <FileText size={20} />
-            <span>Generate Visiting Card</span>
-          </button>
-          <button className="flex items-center justify-center gap-2 p-4 rounded-xl bg-teal-600/30 border border-teal-400/40 shadow-md text-gray-900 font-semibold hover:bg-teal-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer">
-            <LayoutGrid size={20} />
-            <span>Generate Certificates</span>
-          </button>
-          <button className="flex items-center justify-center gap-2 p-4 rounded-xl bg-red-600/30 border border-red-400/40 shadow-md text-gray-900 font-semibold hover:bg-red-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer">
-            <Box size={20} />
-            <span>My assets</span>
-          </button>
-        </div>
-      </section>
+{/* --- Quick Actions --- */}
+<section className="mb-20">   {/* increased from mb-12 to mb-16 */}
+  <h2 className="text-xl sm:text-2xl font-semibold mb-6">Quick Actions</h2>
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+    <button className="flex items-center justify-center gap-2 p-4 rounded-xl bg-blue-600/30 border border-blue-400/40 shadow-md text-gray-900 font-semibold hover:bg-blue-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer">
+      <Plus size={20} />
+      <span>Create New Poster</span>
+    </button>
+    <button className="flex items-center justify-center gap-2 p-4 rounded-xl bg-purple-600/30 border border-purple-400/40 shadow-md text-gray-900 font-semibold hover:bg-purple-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer">
+      <FileText size={20} />
+      <span>Generate Visiting Card</span>
+    </button>
+    <button className="flex items-center justify-center gap-2 p-4 rounded-xl bg-teal-600/30 border border-teal-400/40 shadow-md text-gray-900 font-semibold hover:bg-teal-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer">
+      <LayoutGrid size={20} />
+      <span>Generate Certificates</span>
+    </button>
+    <button className="flex items-center justify-center gap-2 p-4 rounded-xl bg-red-600/30 border border-red-400/40 shadow-md text-gray-900 font-semibold hover:bg-red-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer">
+      <Box size={20} />
+      <span>My assets</span>
+    </button>
+  </div>
+</section>
 
-      {/* --- Newest Templates --- */}
-      <div className="ml-0 sm:ml-0 lg:ml-0 xl:ml-0 my-2">
-        <NewTemplates />
-      </div>
+{/* --- Newest Templates --- */}
+<div className="mt-10 px-3 sm:px-4 lg:px-6">   {/* added mt-10 for more separation */}
+  <NewTemplates />
+</div>
+
+{/* --- visiting card Templates --- */}
+<div className="mt-0 px-3 sm:px-4 lg:px-6">   {/* added mt-10 for more separation */}
+  <Visitingcard/>
+</div>
+
+{/* --- visiting card Templates --- */}
+<div className="mt-35 px-3 sm:px-4 lg:px-6">   {/* added mt-10 for more separation */}
+  <Certificates/>
+</div>
 
       {/* --- AI Creative --- */}
       <div className="mt-8">
