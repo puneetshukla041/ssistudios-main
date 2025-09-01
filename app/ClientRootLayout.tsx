@@ -69,11 +69,10 @@ function AppLayout({ children }: { children: ReactNode }) {
   }, [isSidebarOpen]);
 
   // Background classes
-// Background classes
-const themeBg =
-  theme === "light"
-    ? "bg-white text-gray-900"
-    : "relative overflow-hidden text-gray-900"; // Blossom
+  const themeBg =
+    theme === "light"
+      ? "bg-white text-gray-900"
+      : "relative overflow-hidden text-gray-900"; // Blossom or anime
 
   if (isEditorPage) return <>{children}</>;
 
@@ -81,7 +80,23 @@ const themeBg =
 
   return (
     <>
-      <CherryBlossomBackground /> {/* ✅ Render petals globally */}
+      {/* Backgrounds */}
+      {theme === "flower" && <CherryBlossomBackground />}
+      {theme === "anime" && (
+        <div className="fixed inset-0 -z-10 overflow-hidden">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+          >
+            <source src="/videos/anime.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-black/30" /> {/* optional overlay */}
+        </div>
+      )}
+
       {!isLoginPage ? (
         <div className={`flex relative z-10 min-h-screen ${themeBg}`}>
           <Sidebar forceActive={forceActive} isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
@@ -110,7 +125,9 @@ const themeBg =
           </main>
         </div>
       ) : (
-        <main className="min-h-screen flex flex-col items-center justify-center relative z-10 px-4 bg-white">{children}</main>
+        <main className="min-h-screen flex flex-col items-center justify-center relative z-10 px-4 bg-white">
+          {children}
+        </main>
       )}
     </>
   );

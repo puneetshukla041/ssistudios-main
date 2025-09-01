@@ -17,6 +17,12 @@ const FlowerIcon = () => (
   </svg>
 );
 
+const VideoIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-16 h-16">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14v-4zM4 6h10a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z" />
+  </svg>
+);
+
 const CheckIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
     <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9.5 14.25a.75.75 0 01-1.154.114l-6-5.5a.75.75 0 111.02-1.102l5.093 4.685 8.541-12.793a.75.75 0 011.04-.208z" clipRule="evenodd" />
@@ -30,6 +36,7 @@ const ThemePageComponent = () => {
   const themes = [
     { name: "light", label: "Sunrise", icon: <SunIcon />, bgColor: "bg-white", textColor: "text-gray-800" },
     { name: "flower", label: "Blossom", icon: <FlowerIcon />, bgColor: "bg-pink-100", textColor: "text-gray-900" },
+    { name: "anime", label: "Anime", icon: <VideoIcon />, bgColor: "bg-gray-900", textColor: "text-white" },
   ];
 
   const applyTheme = (newTheme: Theme) => {
@@ -41,7 +48,20 @@ const ThemePageComponent = () => {
 
   return (
     <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-8">
-      <CherryBlossomBackground />
+      {/* Cherry Blossom Background for flower theme */}
+      {theme === "flower" && <CherryBlossomBackground />}
+
+      {/* Anime video background for anime theme */}
+      {theme === "anime" && (
+        <video
+          className="fixed inset-0 w-full h-full object-cover z-0"
+          autoPlay
+          loop
+          muted
+          playsInline
+          src="/videos/anime.mp4"
+        />
+      )}
 
       {applying && (
         <motion.div
@@ -54,12 +74,12 @@ const ThemePageComponent = () => {
         </motion.div>
       )}
 
-      <div className="text-center max-w-2xl py-8">
+      <div className="text-center max-w-2xl py-8 relative z-10">
         <h1 className="text-6xl md:text-7xl font-bold mb-4 tracking-tighter">Customize Your Experience</h1>
         <p className="text-lg md:text-xl font-medium opacity-80">Select a theme that best fits your style.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl py-12">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-4xl py-12 relative z-10">
         {themes.map((t) => (
           <motion.div
             key={t.name}

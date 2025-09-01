@@ -15,6 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={inter.className}>
+        {/* ClientRootLayout now supports both Cherry Blossom and Anime video background */}
         <ClientRootLayout>{children}</ClientRootLayout>
       </body>
     </html>
