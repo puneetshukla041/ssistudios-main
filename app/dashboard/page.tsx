@@ -103,20 +103,20 @@ export default function DashboardPage() {
   // Define the new, smaller metrics
   const metrics = [
     {
-      title: "Active Projects",
-      value: "12",
+      title: "Total Active Projects",
+      value: "3",
       icon: <FolderOpen size={20} />,
       color: "text-blue-600",
     },
     {
-      title: "Templates Used",
-      value: "45",
+      title: "Total Templates",
+      value: "5",
       icon: <LayoutTemplate size={20} />,
       color: "text-green-600",
     },
     {
       title: "Storage Used",
-      value: "2.3GB",
+      value: "44MB",
       icon: <HardDrive size={20} />,
       color: "text-orange-600",
     },
@@ -127,29 +127,24 @@ export default function DashboardPage() {
       color: "text-purple-600",
     },
     {
-      title: "Productivity",
-      value: "+15%",
+      title: "Your Exports",
+      value: "0",
       icon: <TrendingUp size={20} />,
       color: "text-cyan-600",
     },
     {
-      title: "Collaborations",
-      value: "3",
+      title: "Total Members",
+      value: "7",
       icon: <Users size={20} />,
       color: "text-yellow-600",
     },
     {
-      title: "Avg. Session",
-      value: "2.5h",
+      title: " Your Avg. Session",
+      value: "0h",
       icon: <Clock size={20} />,
       color: "text-red-600",
     },
-    {
-      title: "Favorites",
-      value: "18",
-      icon: <Star size={20} />,
-      color: "text-pink-600",
-    },
+
   ];
 
   // Fetch templates on mount
