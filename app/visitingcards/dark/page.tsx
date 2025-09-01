@@ -2,7 +2,7 @@
 'use client'
 import React, { useEffect, useState } from "react";
 import fontkit from "@pdf-lib/fontkit";
-
+import Header from "@/components/dashboard/Header";
 interface InputProps {
   label: string;
   type: string;
@@ -168,8 +168,16 @@ export default function Editor() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#161719] text-white font-sans flex justify-center items-center p-8 mt-[-32] mb-[-40] ml-12 mr-5">
+<div className="min-h-screen w-full bg-[#161719] text-white font-sans flex justify-center items-center p-8 mt-[-32] mb-[-40] ml-12 mr-5">
+  
+  <div className="flex flex-col w-full h-full max-w-[1300px]">
+    
+    {/* Header at top center */}
+    <div className="w-full flex justify-center mb-8">
+      <Header />
+    </div>
       <div className="flex w-full max-w-[1300px] h-[90vh] gap-6">
+
         {/* Left form - Sidebar */}
         <div className="w-2/5 bg-gray-900 rounded-3xl shadow-2xl p-8 flex flex-col gap-8 border border-gray-700/50 h-full">
           <div className="pb-4 border-b border-gray-700">
@@ -179,6 +187,7 @@ export default function Editor() {
             <p className="text-gray-400 mt-1 text-sm">
               Fill in your information to generate your updated PDF.
             </p>
+            
           </div>
           <div className="flex flex-col gap-6 flex-grow overflow-y-auto pr-2">
             <InputComponent
@@ -287,39 +296,45 @@ export default function Editor() {
               }
             />
           </div>
-          <button
-            onClick={handleExport}
-            className="mt-auto w-full bg-gradient-to-r from-[#4A90E2] to-[#BD10E0] text-white text-sm font-semibold py-3 rounded-lg hover:scale-[1.01] transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:shadow-2xl hover:brightness-110"
-            disabled={!previewUrl || isLoading}
-          >
-            {isLoading ? (
-              <span className="flex items-center justify-center">
-                <svg
-                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Generating...
-              </span>
-            ) : (
-              "Export PDF"
-            )}
-          </button>
+<button
+  onClick={handleExport}
+  className="mt-auto w-full bg-gradient-to-r from-[#4A90E2] to-[#BD10E0] 
+             text-white text-sm font-semibold py-3 rounded-lg 
+             hover:scale-[1.01] transition-transform shadow-lg 
+             disabled:opacity-50 disabled:cursor-not-allowed 
+             transform hover:shadow-2xl hover:brightness-110 
+             cursor-pointer"
+  disabled={!previewUrl || isLoading}
+>
+  {isLoading ? (
+    <span className="flex items-center justify-center">
+      <svg
+        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        ></circle>
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        ></path>
+      </svg>
+      Generating...
+    </span>
+  ) : (
+    "Export PDF"
+  )}
+</button>
+
         </div>
         {/* Preview - Main Canvas */}
         <div className="w-3/4 bg-[#242436] rounded-xl shadow-lg flex items-center justify-center overflow-hidden border border-[#303045] h-full outline outline-white outline-1">
@@ -336,7 +351,9 @@ export default function Editor() {
             </p>
           )}
         </div>
+        </div>
       </div>
+      
     </div>
   );
 }
