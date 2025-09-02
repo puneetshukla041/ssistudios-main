@@ -367,6 +367,29 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
         }`}
       >
         
+{/* Download Android App Button */}
+<a
+  href="https://play.google.com/store/apps/details?id=com.yourapp.android" // Replace with your actual link
+  target="_blank"
+  rel="noopener noreferrer"
+  className="w-full mb-3 flex items-center justify-center gap-2 rounded-lg 
+              bg-gradient-to-r from-green-600 via-green-700 to-green-800 
+              hover:from-green-500 hover:via-green-600 hover:to-green-700
+              text-white font-medium text-sm py-2.5 
+              shadow-md shadow-black/30 backdrop-blur-md
+              transition-all cursor-pointer active:scale-[0.97]"
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-4 w-4"
+    fill="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm0 18a8 8 0 1 1 8-8 8.009 8.009 0 0 1-8 8Zm-1-13h2v6h-2Zm0 8h2v2h-2Z"/>
+  </svg>
+  Download Android App
+</a>
+
 {/* Download Desktop App Button */}
 <a
   href="https://drive.google.com/uc?export=download&id=1wsR2aYD_iW_dFCKuP-f2IwOusziUHQiK"
