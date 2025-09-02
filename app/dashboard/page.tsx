@@ -24,7 +24,6 @@ import Footer from "@/components/dashboard/Footer";
 import NewTemplates from "@/components/dashboard/Newtemplates";
 import Visitingcard from "@/components/dashboard/visitingcard";
 import Certificates from "@/components/dashboard/certificates";
-import Aicreative from "@/components/dashboard/aicreative";
 import Usernameheader from "@/components/dashboard/usernameheader";
 import { useRouter } from "next/navigation";
 
@@ -137,25 +136,88 @@ const DropdownButton = ({ router }: { router: any }) => {
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="absolute mt-2 w-56 bg-gray-900 border border-gray-700 rounded-xl shadow-lg flex flex-col z-50 overflow-hidden"
           >
-<button
-  onClick={() => {
-    router.push("/selector/posters/single");
-    setOpen(false);
-  }}
-  className="px-4 py-3 text-white hover:bg-blue-600/60 hover:scale-105 transform transition-all duration-200 text-left cursor-pointer"
->
-  Single Logo Editor
-</button>
-<button
-  onClick={() => {
-    router.push("/selector/posters/multiple");
-    setOpen(false);
-  }}
-  className="px-4 py-3 text-white hover:bg-blue-600/60 hover:scale-105 transform transition-all duration-200 text-left cursor-pointer"
->
-  Multiple Logo Editor
-</button>
+            <button
+              onClick={() => {
+                router.push("/selector/posters/single");
+                setOpen(false);
+              }}
+              className="px-4 py-3 text-white hover:bg-blue-600/60 hover:scale-105 transform transition-all duration-200 text-left cursor-pointer"
+            >
+              Single Logo Editor
+            </button>
+            <button
+              onClick={() => {
+                router.push("/selector/posters/multiple");
+                setOpen(false);
+              }}
+              className="px-4 py-3 text-white hover:bg-blue-600/60 hover:scale-105 transform transition-all duration-200 text-left cursor-pointer"
+            >
+              Multiple Logo Editor
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
+// Visiting Card Dropdown component (light & dark)
+const VisitingCardDropdown = ({ router }: { router: any }) => {
+  const [open, setOpen] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setOpen((prev) => !prev)}
+        className={`w-full flex items-center justify-center gap-2 p-4 rounded-xl shadow-md font-semibold transition-all duration-300 active:scale-[0.98] cursor-pointer ${
+          theme === "light"
+            ? "bg-purple-600/30 border border-purple-400/40 text-gray-900 hover:bg-purple-600/50"
+            : "bg-gray-800/50 border border-gray-700 text-white hover:bg-gray-900/60"
+        }`}
+      >
+        <FileText size={20} />
+        <span>Generate Visiting Card</span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="absolute mt-2 w-56 rounded-xl shadow-lg flex flex-col z-50 overflow-hidden"
+          >
+            <button
+              onClick={() => {
+                router.push("/selector/visitingcard/light");
+                setOpen(false);
+              }}
+              className="px-4 py-3 text-gray-900 bg-white hover:bg-purple-600/30 hover:scale-105 transform transition-all duration-200 text-left cursor-pointer"
+            >
+              Light Theme
+            </button>
+            <button
+              onClick={() => {
+                router.push("/selector/visitingcard/dark");
+                setOpen(false);
+              }}
+              className="px-4 py-3 text-white bg-gray-800 hover:bg-gray-900/60 hover:scale-105 transform transition-all duration-200 text-left cursor-pointer"
+            >
+              Dark Theme
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -219,14 +281,7 @@ export default function DashboardPage() {
         <h2 className="text-xl sm:text-2xl font-semibold mb-6">Quick Actions</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <DropdownButton router={router} />
-
-          <button
-            onClick={() => router.push("/selector/visitingcard")}
-            className="flex items-center justify-center gap-2 p-4 rounded-xl bg-purple-600/30 border border-purple-400/40 shadow-md text-gray-900 font-semibold hover:bg-purple-600/50 transition-all duration-300 active:scale-[0.98] cursor-pointer"
-          >
-            <FileText size={20} />
-            <span>Generate Visiting Card</span>
-          </button>
+          <VisitingCardDropdown router={router} />
 
           <button
             onClick={() => router.push("/selector/certificate")}
@@ -258,9 +313,7 @@ export default function DashboardPage() {
         <Certificates />
       </div>
 
-      <div className="mt-8">
-        <Aicreative />
-      </div>
+
 
       <Footer />
     </main>

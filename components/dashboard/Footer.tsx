@@ -21,13 +21,28 @@ export default function Footer() {
   const iconVariants = { hover: { scale: 1.2, rotate: 5, color: '#000' }, tap: { scale: 0.9 } };
   const linkVariants = { hover: { color: '#000' } };
 
-  return (
-    <footer className="bg-transparent text-gray-600 mt-4 backdrop-blur-sm">
-      <div className="container mx-auto px-4 py-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+  const containerVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1, duration: 0.5 } },
+  };
 
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+  };
+
+  return (
+    <motion.footer
+      className="bg-transparent text-gray-600 mt-4"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: false, amount: 0.3 }}
+      variants={containerVariants}
+    >
+      <div className="container mx-auto px-4 py-4">
+        <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
           {/* Brand */}
-          <div className="flex flex-col md:col-span-1 mb-2 md:mb-0">
+          <motion.div className="flex flex-col md:col-span-1 mb-2 md:mb-0" variants={itemVariants}>
             <h3 className="text-lg font-bold text-gray-900 mb-1">SSI STUDIOS</h3>
             <p className="text-xs leading-snug mb-1">
               Empowering creativity with innovative design tools.
@@ -41,10 +56,10 @@ export default function Footer() {
               <Globe size={14} />
               <span className="font-medium">ssinnovations.com</span>
             </a>
-          </div>
+          </motion.div>
 
           {/* Quick Links */}
-          <div className="flex flex-col md:justify-start mb-2 md:mb-0">
+          <motion.div className="flex flex-col md:justify-start mb-2 md:mb-0" variants={itemVariants}>
             <h4 className="font-semibold text-gray-900 text-xs mb-1">Quick Links</h4>
             <ul className="space-y-1">
               {footerLinks.map((link) => (
@@ -53,17 +68,17 @@ export default function Footer() {
                     href={link.href}
                     variants={linkVariants}
                     whileHover="hover"
-                    className="hover:text-gray-900 text-xs transition-colors"
+                    className="hover:text-gray-900 text-xs transition-colors cursor-pointer"
                   >
                     {link.label}
                   </motion.a>
                 </li>
               ))}
             </ul>
-          </div>
+          </motion.div>
 
           {/* Social Media */}
-          <div className="flex flex-col md:justify-start">
+          <motion.div className="flex flex-col md:justify-start" variants={itemVariants}>
             <h4 className="font-semibold text-gray-900 text-xs mb-1">Follow Us</h4>
             <div className="flex space-x-2">
               {socialLinks.map((social) => (
@@ -74,24 +89,24 @@ export default function Footer() {
                   variants={iconVariants}
                   whileHover="hover"
                   whileTap="tap"
-                  className="text-gray-500 hover:text-gray-900 transition-colors"
+                  className="text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
                 >
                   <social.icon size={16} />
                 </motion.a>
               ))}
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Soft black divider */}
-        <div className="mt-4 border-t border-black/20"></div>
+        <motion.div className="mt-4 border-t border-black/20" variants={itemVariants}></motion.div>
 
         {/* Bottom */}
-        <div className="mt-2 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
+        <motion.div className="mt-2 text-center text-xs text-gray-900" variants={itemVariants}>
           <p>&copy; {new Date().getFullYear()} SSI STUDIOS. All rights reserved.</p>
-          <p className="mt-1 md:mt-0">Developed By <span className="font-medium">SSIMAYA</span></p>
-        </div>
+          <p className="mt-1 font-medium">Developed By SSIMAYA</p>
+        </motion.div>
       </div>
-    </footer>
+    </motion.footer>
   );
 }
