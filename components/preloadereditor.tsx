@@ -7,7 +7,6 @@ const messages = [
   "Almost ready to design...",
   "Applying magic to your poster..."
 ];
-
 export default function Preloader({ onFinish }: { onFinish: () => void }) {
   const [currentMessage, setCurrentMessage] = useState(0);
 
@@ -26,7 +25,6 @@ export default function Preloader({ onFinish }: { onFinish: () => void }) {
       clearTimeout(finishTimeout);
     };
   }, [onFinish]);
-
   return (
     <AnimatePresence>
       <motion.div
