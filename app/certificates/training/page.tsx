@@ -49,7 +49,7 @@ export default function Editor() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [hospitalName, setHospitalName] = useState("");
-  const [programName, setProgramName] = useState("Surgeon Training Program"); // ✅ Default filled
+  const [programName, setProgramName] = useState("Robotics Training Program"); // ✅ Default filled
   const [operationText, setOperationText] = useState(
     "to operate the SSI Mantra Surgical Robotic System"
   );
