@@ -27,7 +27,7 @@ const LandingPage = () => {
           justifyContent: 'center',
           background: 'black',
           overflow: 'hidden',
-          zIndex: 999999, // 👑 highest z-index to cover all content
+          zIndex: 999999, // 
         }}
       >
         <h1
@@ -96,7 +96,7 @@ const MainPage = () => {
       >
         {/* Your actual content goes here */}
         <div className="text-center text-3xl font-semibold font-poppins py-20">
-          Welcome to SS Innovations
+          SSI STUDIOS
         </div>
       </main>
       
