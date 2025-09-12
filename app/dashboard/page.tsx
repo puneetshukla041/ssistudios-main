@@ -16,7 +16,7 @@ import {
   TrendingUp,
   Users,
   Clock,
-
+  Star,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/dashboard/Header";
