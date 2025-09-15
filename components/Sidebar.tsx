@@ -155,6 +155,15 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
 
   // --- End MongoDB Progress Bar State & Controls ---
 
+  // Control body overflow on sidebar open/close
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     const expandedParents = menu
       .filter(
@@ -217,7 +226,7 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
           </div>
         </div>
       </div>
-      <nav className="flex-1 px-4 py-4 overflow-y-auto">
+      <nav className="flex-1 px-4 py-4 overflow-y-auto no-scrollbar">
         {menu.map((item) => {
           if (item.mobileOnly && !isMobile) return null
 
@@ -501,6 +510,13 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
         }
         .shadow-glow {
           box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
       `}</style>
     </>
