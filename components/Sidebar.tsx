@@ -423,6 +423,10 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
         <div className="text-gray-500 text-xs text-center select-none">
           SSI STUDIOS v.1.08.25
         </div>
+        
+        <div className="text-gray-500 text-xs text-center select-none">
+          Developer
+        </div>
         <div className="text-green-500 text-xs text-center select-none">
           Beta Version
         </div>

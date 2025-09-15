@@ -39,6 +39,9 @@ const App = () => {
     }
   }, [isRedirecting]);
 
+
+
+  
   return (
     <div className="flex flex-col justify-start items-start min-h-[50vh] bg-transparent font-sans p-2 sm:p-4">
       {/* Section Heading */}

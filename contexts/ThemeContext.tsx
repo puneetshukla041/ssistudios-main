@@ -16,15 +16,13 @@ export const useTheme = () => {
 
 // --- Provider ---
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setThemeState] = useState<Theme>("flower"); 
+  const [theme, setThemeState] = useState<Theme>(
+    (localStorage.getItem("theme") as Theme) || "flower" // ✅ default directly flower
+  );
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as Theme | null;
-    if (savedTheme) {
-      setThemeState(savedTheme);
-    } else {
-      setThemeState("flower"); // always Blossom if nothing saved
-    }
+    setThemeState(savedTheme || "flower");
   }, []);
 
   useEffect(() => {
@@ -38,8 +36,13 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem("theme", newTheme);
   };
 
-  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 };
+
 
 // --- Cherry Blossom Background ---
 export const CherryBlossomBackground = () => {
