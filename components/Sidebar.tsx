@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect, useCallback } from 'react'
+import { motion, AnimatePresence, useAnimation } from 'framer-motion'
 import Image from "next/image"
 
 import Logo from './Logo'
@@ -14,13 +14,13 @@ import {
   ChevronDown,
   ChevronRight,
   FileImage,
-  HardDrive,
   LayoutTemplate,
   LogOut,
   Layout,
+  RotateCcw,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useRouter, usePathname } from 'next/navigation' // 1. Import Next.js navigation hooks
+import { useRouter, usePathname } from 'next/navigation'
 
 // --- Menu Data ---
 type MenuItem = {
@@ -34,18 +34,18 @@ type MenuItem = {
 
 // (Menu data remains the same)
 const menu: MenuItem[] = [
-  
-  
   { name: 'Dashboard', icon: Home, path: '/dashboard' },
-
-    {
+  {
     name: 'Bg Remover',
     icon: FileImage,
     path: "/bgremover",
-
   },
-
-
+  // --- New "ID Card Maker" button added here ---
+  {
+    name: 'ID Card Maker',
+    icon: LayoutTemplate, // Using LayoutTemplate from lucide-react
+    path: "/idcard", // Assuming this is the path for the ID Card Maker page
+  },
   {
     name: 'Posters',
     icon: Layout,
@@ -89,30 +89,72 @@ const menu: MenuItem[] = [
   { name: 'Logout', icon: LogOut, mobileOnly: true },
 ]
 
-
-
 // --- Sidebar Component ---
 type SidebarProps = {
   forceActive?: string
   isOpen: boolean
   toggleSidebar: () => void
 }
-interface MenuItemProps {
-  name: string;
-  icon: any;
-  path: string;
-  isNew?: boolean;
-}
 
 export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarProps) {
   const { logout } = useAuth()
-  const router = useRouter() // 2. Initialize the router
-  const pathname = usePathname() // 3. Get the current path reliably
+  const router = useRouter()
+  const pathname = usePathname()
   const [expanded, setExpanded] = useState<string[]>([])
   const [isHovered, setIsHovered] = useState(false)
 
+  // --- MongoDB Progress Bar State & Controls ---
+  const [usedStorageMB, setUsedStorageMB] = useState(0)
+  const [totalStorageMB, setTotalStorageMB] = useState(500)
+  const strokeControlsMongo = useAnimation()
+  const iconControls = useAnimation()
+
+  const fetchStorageData = useCallback(async () => {
+    iconControls.start({ rotate: 360, transition: { duration: 1, ease: 'linear', repeat: Infinity } });
+    try {
+      const responseMongo = await fetch('/api/storage');
+      if (!responseMongo.ok) {
+        throw new Error(`HTTP error! status: ${responseMongo.status}`);
+      }
+      const mongoData = await responseMongo.json();
+
+      if (mongoData.success) {
+        setUsedStorageMB(mongoData.data.usedStorageMB);
+        setTotalStorageMB(mongoData.data.totalStorageMB);
+      } else {
+        console.error('API call was not successful:', mongoData.error);
+      }
+    } catch (error) {
+      console.error('Failed to fetch storage data:', error);
+      setUsedStorageMB(0);
+      setTotalStorageMB(500);
+    } finally {
+      iconControls.stop();
+      iconControls.set({ rotate: 0 });
+    }
+  }, [iconControls]);
+
+  const handleRefresh = useCallback(() => {
+    fetchStorageData()
+  }, [fetchStorageData])
+
   useEffect(() => {
-    // Automatically expand the parent of the active page
+    fetchStorageData()
+  }, [fetchStorageData])
+
+  useEffect(() => {
+    const storagePercent = (usedStorageMB / totalStorageMB) * 100
+    const circumference = 2 * Math.PI * 60
+    const offset = circumference - (circumference * (storagePercent / 100))
+    strokeControlsMongo.start({
+      strokeDashoffset: isNaN(offset) ? circumference : offset,
+      transition: { duration: 1.5, ease: "easeInOut" }
+    })
+  }, [strokeControlsMongo, usedStorageMB, totalStorageMB])
+
+  // --- End MongoDB Progress Bar State & Controls ---
+
+  useEffect(() => {
     const expandedParents = menu
       .filter(
         (item) =>
@@ -136,10 +178,6 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
 
   const handleLogout = () => logout()
 
-  const isEditingEnvironment =
-    pathname.includes('/poster/new/single-logo/editor') ||
-    pathname.includes('/poster/new/multiple-logo/editor')
-
   const renderSidebarContent = (isMobile: boolean, isDesktopHovered = false) => (
     <aside
       className={`h-screen bg-[#111214] text-white flex flex-col font-nunito border-r-2 border-white/5 shadow-xl transition-all duration-300 ease-in-out relative
@@ -147,40 +185,39 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
       `}
     >
       <div className="p-5 h-[72px] border-b border-gray-800/50 flex items-center justify-between overflow-hidden">
-<div className="flex items-center justify-center w-full relative">
-  {/* Full Logo */}
-  <div
-    className={`absolute transition-all duration-300 ${
-      isMobile || isDesktopHovered
-        ? "opacity-100 scale-100"
-        : "opacity-0 scale-95"
-    }`}
-  >
-    <Logo />
-  </div>
+        <div className="flex items-center justify-center w-full relative">
+          {/* Full Logo */}
+          <div
+            className={`absolute transition-all duration-300 ${
+              isMobile || isDesktopHovered
+                ? "opacity-100 scale-100"
+                : "opacity-0 scale-95"
+            }`}
+          >
+            <Logo />
+          </div>
 
-  {/* Compact Icon Logo */}
-  <div
-    className={`absolute transition-all duration-300 ${
-      !isMobile && !isDesktopHovered
-        ? "opacity-100 scale-100"
-        : "opacity-0 scale-95"
-    }`}
-  >
-    <Image
-      src="/ssilogo.png"
-      alt="SSI Logo"
-      width={32}
-      height={32}
-      className="transition-all duration-300"
-      priority
-    />
-  </div>
-</div>
-</div>
+          {/* Compact Icon Logo */}
+          <div
+            className={`absolute transition-all duration-300 ${
+              !isMobile && !isDesktopHovered
+                ? "opacity-100 scale-100"
+                : "opacity-0 scale-95"
+            }`}
+          >
+            <Image
+              src="/ssilogo.png"
+              alt="SSI Logo"
+              width={32}
+              height={32}
+              className="transition-all duration-300"
+              priority
+            />
+          </div>
+        </div>
+      </div>
       <nav className="flex-1 px-4 py-4 overflow-y-auto">
         {menu.map((item) => {
-          
           if (item.mobileOnly && !isMobile) return null
 
           const Icon = item.icon
@@ -188,10 +225,8 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
           const active = isParentActive(item)
 
           return (
-            
             <div key={item.name} className="mb-1.5">
               <button
-                // 4. Update the onClick handler for navigation
                 onClick={() => {
                   if (item.name === 'Logout') {
                     handleLogout()
@@ -200,8 +235,8 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
                   if (item.children) {
                     toggle(item.name)
                   } else if (item.path && item.path !== pathname) {
-                    router.push(item.path) // Use router for navigation
-                    if (isOpen) toggleSidebar() // Close mobile sidebar on navigate
+                    router.push(item.path)
+                    if (isOpen) toggleSidebar()
                   }
                 }}
                 className={`group flex items-center justify-between w-full px-3 py-2.5 rounded-lg transition-all duration-200 relative
@@ -228,19 +263,12 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
                   >
                     {item.name}
                   </span>
-
-
-
-
                 </div>
-
-
                 <div
                   className={`absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full transition-opacity duration-300 ${
                     active ? 'opacity-100 bg-white shadow-glow' : 'opacity-0'
                   }`}
                 />
-
                 {item.children &&
                   (isMobile || isDesktopHovered ? (
                     isOpenMenuItem ? (
@@ -256,7 +284,6 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
                     )
                   ) : null)}
               </button>
-
               {item.children && (
                 <motion.div
                   initial={false}
@@ -271,7 +298,7 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
                         key={child.path}
                         onClick={() => {
                           if (child.path !== pathname) {
-                            router.push(child.path) // Use router for child navigation too
+                            router.push(child.path)
                             if (isOpen) toggleSidebar()
                           }
                         }}
@@ -294,71 +321,55 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
             </div>
           )
         })}
-        
-{/* Storage Card - Compact */}
-{(isMobile || isDesktopHovered) && (
-  <div className="mx-2 mt-2 mb-1 p-2.5 rounded-lg border border-gray-700/40 bg-gray-900/30 shadow-sm backdrop-blur-sm">
-    {/* Title and Icon */}
-    <div className="flex items-center gap-1.5">
-      <HardDrive size={14} className="text-blue-400/90 flex-shrink-0" />
-      <h3 className="text-[11px] font-medium text-gray-200">Storage Used</h3>
-    </div>
-    
-    {/* Progress Bar and Values */}
-    <div className="mt-1.5">
-      <div className="flex justify-between items-baseline mb-0.5">
-        <span className="text-sm font-semibold text-white">44MB</span>
-        <span className="text-[9px] text-gray-400">of 500MB</span>
-      </div>
-      <div className="w-full h-1 bg-gray-700/60 rounded-full overflow-hidden">
-        <div 
-          className="h-full bg-blue-500 rounded-full transition-all duration-500 ease-in-out"
-          style={{ width: '8.8%' }}
-        />
-      </div>
-    </div>
 
-    {/* Trend Information */}
-    <div className="mt-1 text-[9px] font-medium flex items-center gap-1 text-green-400/90">
-      <span>+3 from last month</span>
-    </div>
-  </div>
-)}
-
-{/* Templates Card - Compact */}
-{(isMobile || isDesktopHovered) && (
-  <div className="mx-2 mt-2 mb-1 p-2.5 rounded-lg border border-gray-700/40 bg-gray-900/30 shadow-sm backdrop-blur-sm">
-    {/* Header: Icon + Title */}
-    <div className="flex items-center gap-1.5">
-      <LayoutTemplate size={14} className="text-green-500/90 flex-shrink-0" />
-      <span className="text-[11px] font-medium text-gray-200">Templates</span>
-    </div>
-
-    {/* Progress Bar and Values */}
-    <div className="mt-1.5">
-      <div className="flex justify-between items-baseline mb-0.5">
-        <span className="text-sm font-semibold text-white">3</span>
-        <span className="text-[9px] text-gray-400">This month</span>
-      </div>
-      <div className="w-full h-1 bg-gray-700/60 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-green-500 rounded-full transition-all duration-500 ease-in-out"
-          style={{ width: '45%' }}
-        />
-      </div>
-    </div>
-
-    {/* Trend Information */}
-    <div className="mt-1 text-[9px] font-medium flex items-center gap-1 text-green-400/90">
-      +12 from last month
-    </div>
-  </div>
-)}
-
-
-
-
-
+        {/* MongoDB Progress Bar Section */}
+        {(isMobile || isDesktopHovered) && (
+          <div className="mt-8">
+            <h3 className="text-sm font-semibold text-gray-400 mb-1 px-3 flex items-center justify-between">
+              <span className="flex-1">Storage Used</span>
+              <motion.button
+                onClick={handleRefresh}
+                animate={iconControls}
+                whileHover={{ scale: 1.1 }}
+                // --- Updated cursor class here ---
+                className="text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"
+                aria-label="Refresh storage data"
+              >
+                <RotateCcw size={18} />
+              </motion.button>
+            </h3>
+            <p className="text-[11px] text-gray-100 px-3 mb-2">(MongoDB)</p>
+            <div className="flex justify-center items-center">
+              <div className="relative w-38 h-38">
+                <div className="absolute inset-0 rounded-full bg-cyan-900/10 blur-2xl z-0 shadow-[0_0_30px_#06b6d4aa]" />
+                <svg className="w-full h-full rotate-[-90deg] relative z-10" viewBox="0 0 144 144">
+                  <circle cx="72" cy="72" r="60" className="stroke-zinc-800" strokeWidth="10" fill="none" />
+                  <motion.circle
+                    cx="72" cy="72" r="60" stroke="url(#gradient-mongo)" strokeWidth="10" fill="none" strokeDasharray="377" strokeLinecap="round" animate={strokeControlsMongo}
+                    style={{ filter: 'drop-shadow(0 0 6px #0ea5e9)' }}
+                  />
+                  <defs>
+                    <linearGradient id="gradient-mongo" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#06b6d4" />
+                      <stop offset="50%" stopColor="#3b82f6" />
+                      <stop offset="100%" stopColor="#8b5cf6" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center z-20 text-center">
+                  <div className="flex flex-col items-center">
+                    <span className="text-white text-base font-mono font-extrabold tracking-tight leading-tight">
+                      {`${usedStorageMB.toFixed(1)}MB`}
+                    </span>
+                    <span className="text-xs text-cyan-400 font-medium mt-1">
+                      {`${(usedStorageMB / totalStorageMB * 100).toFixed(1)}% of ${totalStorageMB}MB`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
 
       <div
@@ -366,71 +377,65 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
           isDesktopHovered ? "opacity-100" : "opacity-0"
         }`}
       >
-        
-{/* Download Android App Button */}
-<a
-  href="https://drive.google.com/file/d/1AgSWuLtwlhmCxMTsDuHLxvmA8MuKDbTL/view?usp=sharing" // Replace with your actual link
-  target="_blank"
-  rel="noopener noreferrer"
-  className="w-full mb-3 flex items-center justify-center gap-2 rounded-lg 
-              bg-gradient-to-r from-green-600 via-green-700 to-green-800 
-              hover:from-green-500 hover:via-green-600 hover:to-green-700
-              text-white font-medium text-sm py-2.5 
-              shadow-md shadow-black/30 backdrop-blur-md
-              transition-all cursor-pointer active:scale-[0.97]"
->
+        {/* Download Android App Button */}
+        <a
+          href="https://drive.google.com/file/d/1AgSWuLtwlhmCxMTsDuHLxvmA8MuKDbTL/view?usp=sharing"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full mb-3 flex items-center justify-center gap-2 rounded-lg
+            bg-gradient-to-r from-green-600 via-green-700 to-green-800
+            hover:from-green-500 hover:via-green-600 hover:to-green-700
+            text-white font-medium text-sm py-2.5
+            shadow-md shadow-black/30 backdrop-blur-md
+            transition-all cursor-pointer active:scale-[0.97]"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm0 18a8 8 0 1 1 8-8 8.009 8 0 0 1-8 8Zm-1-13h2v6h-2Zm0 8h2v2h-2Z"/>
+          </svg>
+          Download Android App
+        </a>
 
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-4 w-4"
-    fill="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm0 18a8 8 0 1 1 8-8 8.009 8.009 0 0 1-8 8Zm-1-13h2v6h-2Zm0 8h2v2h-2Z"/>
-  </svg>
-  Download Android App
-</a>
-
-{/* Download Desktop App Button */}
-<a
-  href="https://drive.google.com/uc?export=download&id=1wsR2aYD_iW_dFCKuP-f2IwOusziUHQiK"
-  download
-  className="w-full mb-3 flex items-center justify-center gap-2 rounded-lg 
-              bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 
-              hover:from-gray-600 hover:via-gray-700 hover:to-gray-800
-              text-gray-200 font-medium text-sm py-2.5 
-              shadow-md shadow-black/30 backdrop-blur-md
-              transition-all cursor-pointer active:scale-[0.97]"
->
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-4 w-4"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
-    />
-  </svg>
-  Download Desktop App
-</a>
-
-
+        {/* Download Desktop App Button */}
+        <a
+          href="https://drive.google.com/uc?export=download&id=1wsR2aYD_iW_dFCKuP-f2IwOusziUHQiK"
+          download
+          className="w-full mb-3 flex items-center justify-center gap-2 rounded-lg
+            bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900
+            hover:from-gray-600 hover:via-gray-700 hover:to-gray-800
+            text-gray-200 font-medium text-sm py-2.5
+            shadow-md shadow-black/30 backdrop-blur-md
+            transition-all cursor-pointer active:scale-[0.97]"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+            />
+          </svg>
+          Download Desktop App
+        </a>
         <div className="text-gray-500 text-xs text-center select-none">
           SSI STUDIOS v.1.08.25
         </div>
-        
         <div className="text-gray-500 text-xs text-center select-none">
-          Developer
+          Developed By Puneet Shukla
         </div>
         <div className="text-green-500 text-xs text-center select-none">
           Beta Version
         </div>
-
         <button
           onClick={handleLogout}
           className="flex items-center justify-center gap-2 text-sm text-red-500 hover:text-red-400 transition-colors w-full py-2 rounded-lg hover:bg-red-500/10 cursor-pointer mt-3"
@@ -439,7 +444,6 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
           Logout
         </button>
       </div>
-
     </aside>
   )
 
