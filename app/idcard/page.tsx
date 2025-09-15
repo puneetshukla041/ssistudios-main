@@ -34,7 +34,7 @@ const InputComponent: React.FC<InputProps> = ({
         onChange={onChange}
         placeholder={placeholder}
         style={{ "--tw-ring-color": focusColor } as React.CSSProperties}
-        className="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 pl-4 pr-10 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-[--tw-ring-color] outline-none transition-all duration-200 ease-in-out hover:border-gray-500"
+        className="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 pl-4 pr-10 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-[--tw-ring-color] outline-none transition-all duration-200 ease-in-out hover:border-gray-500 uppercase font-semibold placeholder:font-semibold"
       />
       {icon && (
         <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 cursor-pointer">
@@ -44,6 +44,17 @@ const InputComponent: React.FC<InputProps> = ({
     </div>
   </div>
 );
+
+// Helper function to capitalize the first letter of each word
+const toTitleCase = (str: string) => {
+  return str
+    .split(" ")
+    .map((word) => {
+      if (word.length === 0) return "";
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(" ");
+};
 
 export default function Editor() {
   const [fullName, setFullName] = useState("");
@@ -70,81 +81,164 @@ export default function Editor() {
           await fetch("/fonts/Sora-Regular.ttf").then((res) => res.arrayBuffer())
         );
         const soraSemiBoldFont = await pdfDoc.embedFont(
-          await fetch("/fonts/Sora-SemiBold.ttf").then((res) => res.arrayBuffer())
+          await fetch("/fonts/Sora-SemiBold.ttf").then((res) =>
+            res.arrayBuffer()
+          )
         );
         const bebasNeueFont = await pdfDoc.embedFont(
-          await fetch("/fonts/Sora-SemiBold.ttf").then((res) => res.arrayBuffer())
+          await fetch("/fonts/BebasNeue-Regular.ttf").then((res) =>
+            res.arrayBuffer()
+          )
         );
         const poppinsMediumFont = await pdfDoc.embedFont(
-          await fetch("/fonts/Poppins-Medium.ttf").then((res) => res.arrayBuffer())
+          await fetch("/fonts/Poppins-Medium.ttf").then((res) =>
+            res.arrayBuffer()
+          )
         );
+
+        // Fetch the Droplet SVG content from a public path
+        const dropletSvgResponse = await fetch("/logos/droplet.svg");
+        const dropletSvgText = await dropletSvgResponse.text();
+
+        // Extract the path data (d attribute) from the SVG content
+        const pathData = /d="([^"]*)"/.exec(dropletSvgText)?.[1];
+        if (!pathData) {
+          throw new Error("Could not find path data in Droplet SVG.");
+        }
 
         // Page 2: ID Card
         if (pdfDoc.getPages().length < 2) {
           pdfDoc.addPage();
         }
         const secondPage = pdfDoc.getPages()[1];
-        
         const { width: pageWidth } = secondPage.getSize();
-        
-        // Define text positions and sizes
-        const FULL_NAME_FONT_SIZE = 18;
-        const FULL_NAME_Y_POS = 50; // Distance from the bottom of the page
 
-        // Add Full Name
+        // --- Dynamic font sizing helper ---
+        const getDynamicFontSize = (
+          text: string,
+          font: any,
+          maxWidth: number,
+          maxFontSize: number
+        ) => {
+          let fontSize = maxFontSize;
+          let textWidth = font.widthOfTextAtSize(text, fontSize);
+          while (textWidth > maxWidth && fontSize > 1) {
+            fontSize -= 1;
+            textWidth = font.widthOfTextAtSize(text, fontSize);
+          }
+          return fontSize;
+        };
+        
+        // --- Text positions ---
+        const FULL_NAME_Y_POS = 50;
+        const DESIGNATION_Y_POS = 38;
+        const ID_CARD_NO_Y_POS = 16;
+        const BLOOD_GROUP_Y_POS = 28;
+
+        // --- Full Name ---
         if (fullName) {
           const capitalizedFullName = fullName.toUpperCase();
-          const fullNameWidth = bebasNeueFont.widthOfTextAtSize(capitalizedFullName, FULL_NAME_FONT_SIZE);
-          const x = (pageWidth / 2) - (fullNameWidth / 2); // Center horizontally
-          
+          const MAX_FULL_NAME_WIDTH = pageWidth * 0.8;
+          const dynamicFontSize = getDynamicFontSize(
+            capitalizedFullName,
+            bebasNeueFont,
+            MAX_FULL_NAME_WIDTH,
+            18
+          );
+          const fullNameWidth = bebasNeueFont.widthOfTextAtSize(
+            capitalizedFullName,
+            dynamicFontSize
+          );
+          const x = pageWidth / 2 - fullNameWidth / 2;
           secondPage.drawText(capitalizedFullName, {
-            x: x,
+            x,
             y: FULL_NAME_Y_POS,
-            size: FULL_NAME_FONT_SIZE,
+            size: dynamicFontSize,
             font: bebasNeueFont,
             color: rgb(0, 0, 0),
           });
         }
 
-        // Add Designation
+        // --- Designation (center + auto shrink) ---
         if (designation) {
-          const designationWidth = poppinsMediumFont.widthOfTextAtSize(designation, 10);
-          const x = (pageWidth / 2) - (designationWidth / 2); // Center horizontally
-          secondPage.drawText(designation, {
-            x: x,
-            y: 160,
-            size: 10,
+          const titleCaseDesignation = toTitleCase(designation);
+          const MAX_DESIGNATION_WIDTH = pageWidth * 0.7;
+          const fontSize = getDynamicFontSize(
+            titleCaseDesignation,
+            poppinsMediumFont,
+            MAX_DESIGNATION_WIDTH,
+            12
+          );
+          const designationWidth = poppinsMediumFont.widthOfTextAtSize(
+            titleCaseDesignation,
+            fontSize
+          );
+          const x = pageWidth / 2 - designationWidth / 2;
+          secondPage.drawText(titleCaseDesignation, {
+            x,
+            y: DESIGNATION_Y_POS,
+            size: fontSize,
             font: poppinsMediumFont,
             color: rgb(0, 0, 0),
           });
         }
 
-        // Add ID Card No.
+        // --- ID Card No ---
         if (idCardNo) {
-          const idCardNoWidth = soraFont.widthOfTextAtSize(idCardNo, 8);
-          const x = (pageWidth / 2) - (idCardNoWidth / 2); // Center horizontally
-          secondPage.drawText(idCardNo, {
-            x: x,
-            y: 140,
-            size: 8,
-            font: soraFont,
-            color: rgb(0.25, 0.749, 0.647), // #40bea5
-          });
-        }
-
-        // Add Blood Group
-        if (bloodGroup) {
-          const bloodGroupWidth = soraSemiBoldFont.widthOfTextAtSize(bloodGroup, 8);
-          const x = (pageWidth / 2) - (bloodGroupWidth / 2); // Center horizontally
-          secondPage.drawText(bloodGroup, {
-            x: x,
-            y: 120,
-            size: 8,
+          const formattedIdCardNo = `#${idCardNo}`;
+          const fontSize = 16;
+          const idCardNoWidth = soraSemiBoldFont.widthOfTextAtSize(formattedIdCardNo, fontSize);
+          const x = (pageWidth / 2) - (idCardNoWidth / 2) - 10;
+          secondPage.drawText(formattedIdCardNo, {
+            x,
+            y: ID_CARD_NO_Y_POS,
+            size: fontSize,
             font: soraSemiBoldFont,
-            color: rgb(1, 1, 1), // white
+            color: rgb(80 / 255, 185 / 255, 162 / 255),
           });
         }
-        
+// --- Blood Group with vector icon ---
+if (bloodGroup) {
+  const bloodGroupTextSize = 14; // bigger text
+  const iconSize = 40;           // make icon larger
+  const iconPadding = 8;
+
+  // Measure text
+  const textWidth = soraSemiBoldFont.widthOfTextAtSize(
+    bloodGroup,
+    bloodGroupTextSize
+  );
+  const totalWidth = textWidth + iconSize + iconPadding;
+
+  // Center horizontally
+  const startX = pageWidth / 2 - totalWidth / 2;
+  const iconX = startX;
+  const textX = startX + iconSize + iconPadding;
+
+  // Center vertically (half page height)
+  const { height: pageHeight } = secondPage.getSize();
+  const BLOOD_GROUP_Y_POS = pageHeight / 2;
+
+  // Draw Droplet icon
+  secondPage.drawSvgPath(pathData, {
+    x: iconX,
+    y: BLOOD_GROUP_Y_POS,
+    scale: iconSize / 24, // enlarge from base 24x24
+    color: rgb(0.8, 0, 0), // dark red for visibility
+  });
+
+  // Draw text aligned with icon
+  secondPage.drawText(bloodGroup, {
+    x: textX,
+    y: BLOOD_GROUP_Y_POS + iconSize / 4, // adjust to align vertically with icon
+    size: bloodGroupTextSize,
+    font: soraSemiBoldFont,
+    color: rgb(0, 0, 0),
+  });
+}
+
+
+        // Save + Preview
         const pdfBytes = await pdfDoc.save();
         const blob = new Blob([new Uint8Array(pdfBytes)], {
           type: "application/pdf",
@@ -157,7 +251,6 @@ export default function Editor() {
         setIsLoading(false);
       }
     };
-
     generatePdf();
   }, [fullName, designation, idCardNo, bloodGroup]);
 
@@ -165,7 +258,7 @@ export default function Editor() {
     if (previewUrl) {
       const link = document.createElement("a");
       link.href = previewUrl;
-      link.download = "id_card.pdf"; // Changed download file name
+      link.download = "id_card.pdf";
       link.click();
     }
   };
@@ -192,15 +285,15 @@ export default function Editor() {
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Enter full name"
+                placeholder="ENTER FULL NAME"
                 focusColor="#4A90E2"
               />
               <InputComponent
                 label="Designation"
                 type="text"
                 value={designation}
-                onChange={(e) => setDesignation(e.target.value)}
-                placeholder="Enter designation"
+                onChange={(e) => setDesignation(toTitleCase(e.target.value))}
+                placeholder="Enter Designation"
                 focusColor="#4A90E2"
               />
               <InputComponent
@@ -242,7 +335,9 @@ export default function Editor() {
             ) : previewUrl ? (
               <iframe src={previewUrl} className="w-full h-full rounded-xl" />
             ) : (
-              <p className="text-[#8888AA] text-sm">Preview will appear here...</p>
+              <p className="text-[#8888AA] text-sm">
+                Preview will appear here...
+              </p>
             )}
           </div>
         </div>

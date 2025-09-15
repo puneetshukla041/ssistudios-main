@@ -3,7 +3,6 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import ClientRootLayout from './ClientRootLayout';
 
-// Configure the Inter font
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
@@ -15,11 +14,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        {/* Favicon */}
         <link rel="icon" href="/ssilogo.png" />
       </head>
-      <body className={inter.className}>
-        {/* ClientRootLayout now supports both Cherry Blossom and Anime video background */}
+      <body className={inter.className} suppressHydrationWarning>
         <ClientRootLayout>{children}</ClientRootLayout>
       </body>
     </html>

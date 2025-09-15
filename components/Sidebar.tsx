@@ -54,6 +54,7 @@ const menu: MenuItem[] = [
       { name: 'Multiple Logos Editor', path: '/selector/posters/multiple' },
     ],
   },
+  
   {
     name: 'Visiting Cards',
     icon: FileText,
