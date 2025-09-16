@@ -227,7 +227,7 @@ export default function LoginPage() {
                    md:text-gray-100 flex flex-col justify-center"
       >
         <h1 className="text-3xl font-semibold text-gray-900 md:text-gray-100 mb-4 text-center">
-          SSI Studios Admin
+          SSI Studios
         </h1>
         <p className="text-gray-500 md:text-gray-300 text-sm text-center mb-6">
           Please log in to continue
