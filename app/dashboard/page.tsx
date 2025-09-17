@@ -3,17 +3,18 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus,
-  LayoutGrid,
-  Box,
-  FileText,
-  HardDrive,
-  TrendingUp,
-  Users,
-  Clock,
-  AlertTriangle,
-  Check,
-  X,
+  Plus,
+  LayoutGrid,
+  Box,
+  FileText,
+  HardDrive,
+  TrendingUp,
+  Users,
+  Clock,
+  AlertTriangle,
+  Check,
+  X,
+  Mail, // Change Bug to Mail
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/dashboard/Header";
@@ -136,7 +137,7 @@ const SmallMetricCard = ({
             <p className="text-sm text-gray-600 truncate">{title}</p>
             <p className="text-xs text-gray-500 mt-1">{value.split("|")[1]}</p>
             {/* Progress bar container */}
-            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+             <div className="w-full bg-gray-200 rounded-full h-1.0 mt-2 border border-gray-500">
               {/* Progress bar fill */}
               <div
                 className="bg-green-500 h-1.5 rounded-full transition-all duration-500 ease-out"
@@ -217,6 +218,7 @@ const DropdownButton = ({ router }: { router: any }) => {
 // Visiting Card Dropdown component (light & dark)
 const VisitingCardDropdown = ({ router }: { router: any }) => {
   const [open, setOpen] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -404,14 +406,21 @@ export default function DashboardPage() {
   return (
     <main className="flex-1 min-h-screen px-4 sm:px-6 lg:px-12 xl:px-20 transition-all duration-300 bg-transparent text-gray-900">
       {/* Report Bug Button */}
-      <motion.button
-        className="fixed top-4 right-4 z-50 px-4 py-2 rounded-full bg-blue-600/90 text-white font-semibold shadow-lg transition-all duration-300 hover:bg-blue-700/90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => alert('Report a bug or give feedback')}
-      >
-        Feedback
-      </motion.button>
+{/* Report Bug Button */}
+<div className="absolute top-10 right-10 z-50 flex flex-col items-center">
+  <motion.button
+    className="p-3 rounded-full bg-blue-600/90 text-white shadow-lg transition-all duration-300 hover:bg-blue-700/90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+    whileHover={{ scale: 1.1 }}
+    whileTap={{ scale: 0.9 }}
+    onClick={() => alert("Report a bug or give feedback")}
+  >
+    <Mail size={24} />
+  </motion.button>
+  <span className="mt-2 text-xs text-gray-700 dark:text-black-600 text-center whitespace-nowrap">
+    Report a bug <br /> or give feedback for Improvements
+  </span>
+</div>
+
       
       <div className="my-4 cursor-pointer hidden lg:block">
         <Header />
@@ -456,22 +465,25 @@ export default function DashboardPage() {
         </div>
       </section>
       
-      <div className="flex flex-wrap px-3 sm:px-4 lg:px-6 gap-6">
-        <div className="flex-1 min-w-[300px]">
-          <NewTemplates />
-        </div>
+<div className="flex flex-col px-3 sm:px-4 lg:px-6 gap-6">
+  {/* New Templates */}
+  <div className="w-full">
+    <NewTemplates />
+  </div>
 
-        <div className="flex-1 min-w-[300px] mt-2 ml-10">
-          <Certificates />
-        </div>
-      </div>
+  {/* Certificates below NewTemplates */}
+  <div className="w-full mt-2">
+    <Certificates />
+  </div>
 
-      {/* Visiting Card below both */}
-      <div className="mt-[-20] px-3 sm:px-4 lg:px-6">
-        <Visitingcard />
-      </div>
+  {/* Visiting Card below both */}
+  <div className="mt-2 w-full">
+    <Visitingcard />
+  </div>
+</div>
 
-      <Footer />
+<Footer />
+
     </main>
   );
 }

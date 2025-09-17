@@ -52,7 +52,7 @@ const App = () => {
   transition={{ duration: 0.8, ease: "easeOut" }}
   className="text-lg sm:text-xl font-bold font-['Be_Vietnam_Pro'] text-black mb-6 pl-60 tracking-normal"
 >
-  Certificate Template Library
+ 
 </motion.h2>
 
 
