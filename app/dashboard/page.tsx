@@ -1,22 +1,19 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
   LayoutGrid,
-  Download,
   Box,
-  Sparkles,
   FileText,
-  FolderOpen,
-  LayoutTemplate,
   HardDrive,
-  Activity,
   TrendingUp,
   Users,
   Clock,
-  Star,
+  AlertTriangle,
+  Check,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/dashboard/Header";
@@ -26,12 +23,23 @@ import Visitingcard from "@/components/dashboard/visitingcard";
 import Certificates from "@/components/dashboard/certificates";
 import Usernameheader from "@/components/dashboard/usernameheader";
 import { useRouter } from "next/navigation";
+import { io, Socket } from "socket.io-client";
+
+let socket: Socket;
 
 // Define the shape of a template object from the database
 interface Template {
   _id: string;
   templateName: string;
   imageUrl: string;
+}
+
+// Define the shape of a member object from the database
+interface MemberData {
+  _id: string;
+  username: string;
+  createdAt: string;
+  lastLoggedIn?: string; // New field for login status
 }
 
 // Card component for displaying a design thumbnail and title
@@ -66,41 +74,86 @@ const DesignCard = ({
   </div>
 );
 
-// A simple metric card component for analytics (new smaller version)
+// A simple metric card component for analytics (with storage line display and status indicator)
 const SmallMetricCard = ({
   title,
   value,
   icon,
   color,
+  percentage, // Prop for the percentage
 }: {
   title: string;
   value: string;
   icon: React.ReactNode;
   color: string;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5 }}
-    whileHover={{ y: -4 }}
-    className={`relative p-4 rounded-xl shadow-md border border-gray-300 flex flex-col items-start gap-2 bg-transparent transition-transform duration-300 hover:scale-[1.03] hover:shadow-xl cursor-pointer group`}
-  >
-    {title === "Storage Used" && (
-      <div className="absolute top-2 right-2 bg-green-400 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full shadow">
-        8.8% used
-      </div>
-    )}
-    <div
-      className={`p-2 rounded-full bg-gray-100/50 ${color} transition-transform duration-300 group-hover:scale-110`}
+  percentage?: number; // Make it optional since not all cards need it
+}) => {
+  // Determine the status and styles based on the percentage
+  const getStatus = () => {
+    if (percentage === undefined) {
+      return { text: "", color: "", icon: null };
+    } else if (percentage >= 90) {
+      return { text: "Full", color: "bg-red-500", icon: <X size={14} /> };
+    } else if (percentage >= 70) {
+      return { text: "Warning", color: "bg-orange-500", icon: <AlertTriangle size={14} /> };
+    } else {
+      return { text: "Safe", color: "bg-green-500", icon: <Check size={14} /> };
+    }
+  };
+
+  const status = getStatus();
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      whileHover={{ y: -4 }}
+      className={`relative p-4 rounded-xl shadow-md border border-gray-300 flex flex-col items-start gap-2 bg-transparent transition-transform duration-300 hover:scale-[1.03] hover:shadow-xl cursor-pointer group`}
     >
-      {icon}
-    </div>
-    <div className="space-y-1">
-      <h4 className="text-lg font-bold text-gray-900">{value}</h4>
-      <p className="text-sm text-gray-600 truncate">{title}</p>
-    </div>
-  </motion.div>
-);
+      {/* Status Indicator */}
+      {title === "Storage Used" && percentage !== undefined && (
+        <div
+          className={`absolute top-2 right-2 flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full text-white ${status.color}`}
+        >
+          {status.icon}
+          <span>{status.text}</span>
+        </div>
+      )}
+
+      {/* Main Card Content (existing code) */}
+      <div
+        className={`p-2 rounded-full bg-gray-100/50 ${color} transition-transform duration-300 group-hover:scale-110`}
+      >
+        {icon}
+      </div>
+
+      <div className="space-y-1 w-full">
+        {/* Show percentage + line text for Storage */}
+        {title === "Storage Used" ? (
+          <>
+            <h4 className="text-lg font-bold text-gray-900">{value.split("|")[0]}</h4>
+            <p className="text-sm text-gray-600 truncate">{title}</p>
+            <p className="text-xs text-gray-500 mt-1">{value.split("|")[1]}</p>
+            {/* Progress bar container */}
+            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+              {/* Progress bar fill */}
+              <div
+                className="bg-green-500 h-1.5 rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${percentage}%` }}
+              ></div>
+            </div>
+          </>
+        ) : (
+          <>
+            <h4 className="text-lg font-bold text-gray-900">{value}</h4>
+            <p className="text-sm text-gray-600 truncate">{title}</p>
+          </>
+        )}
+      </div>
+    </motion.div>
+  );
+};
 
 // Dropdown button component
 const DropdownButton = ({ router }: { router: any }) => {
@@ -164,7 +217,6 @@ const DropdownButton = ({ router }: { router: any }) => {
 // Visiting Card Dropdown component (light & dark)
 const VisitingCardDropdown = ({ router }: { router: any }) => {
   const [open, setOpen] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -231,16 +283,105 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // --- MongoDB Progress Bar State & Controls ---
+  const [usedStorageKB, setUsedStorageKB] = useState(0);
+  const [usedStorageMB, setUsedStorageMB] = useState(0);
+  const [totalStorageMB, setTotalStorageMB] = useState(500);
+  const [totalMembers, setTotalMembers] = useState<number>(0);
+  const [membersList, setMembersList] = useState<MemberData[]>([]);
+
   const router = useRouter();
 
+  // Fetch storage data from the API
+  const fetchStorageData = useCallback(async () => {
+    try {
+      const responseMongo = await fetch('/api/storage');
+      if (!responseMongo.ok) {
+        throw new Error(`HTTP error! status: ${responseMongo.status}`);
+      }
+      const mongoData = await responseMongo.json();
+
+      if (mongoData.success) {
+        setUsedStorageKB(mongoData.data.usedStorageKB);
+        setUsedStorageMB(mongoData.data.usedStorageMB);
+        setTotalStorageMB(mongoData.data.totalStorageMB);
+      } else {
+        console.error('API call was not successful:', mongoData.error);
+      }
+    } catch (error) {
+      console.error('Failed to fetch storage data:', error);
+      setUsedStorageMB(0);
+      setUsedStorageKB(0);
+      setTotalStorageMB(500);
+    }
+  }, []);
+
+  // Fetch total members count from the API
+  const fetchMembersList = useCallback(async () => {
+    try {
+      const response = await fetch('/api/members/count');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      if (data.success) {
+        setTotalMembers(data.members.length);
+      }
+    } catch (error) {
+      console.error('Failed to fetch members list:', error);
+      setTotalMembers(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStorageData();
+    fetchMembersList();
+    // Set an interval to refresh member list every 30 seconds
+    const intervalId = setInterval(fetchMembersList, 30000);
+    return () => clearInterval(intervalId);
+  }, [fetchStorageData, fetchMembersList]);
+
+  // New socket code
+  useEffect(() => {
+    // Initialize socket connection
+    socket = io({
+      path: "/api/socketio",
+    });
+
+    if (user) {
+      socket.emit("join", user.id); // Mark yourself online
+    }
+
+    // On tab close → mark offline
+    const handleBeforeUnload = () => {
+      if (user) socket.emit("leave", user.id);
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      if (user) socket.emit("leave", user.id);
+      socket.disconnect();
+    };
+  }, [user]);
+
+  // Determine the display value for storage
+  const storageDisplayValue = usedStorageMB < 1 ? `${usedStorageKB.toFixed(1)}KB` : `${usedStorageMB.toFixed(1)}MB`;
+  const storagePercentage = ((usedStorageMB / totalStorageMB) * 100).toFixed(1);
+
+  // Define metrics with dynamic values
   const metrics = [
-    { title: "Total Active Projects", value: "3", icon: <FolderOpen size={20} />, color: "text-blue-600" },
-    { title: "Total Templates", value: "5", icon: <LayoutTemplate size={20} />, color: "text-green-600" },
-    { title: "Storage Used", value: "44MB", icon: <HardDrive size={20} />, color: "text-orange-600" },
-    { title: "Recent Activity", value: "0", icon: <Activity size={20} />, color: "text-purple-600" },
+    {
+      title: "Storage Used",
+      value: `${storagePercentage}% used | ${usedStorageKB > 0 ? `${usedStorageKB}KB` : `${usedStorageMB.toFixed(1)}MB`} / ${totalStorageMB}MB`,
+      icon: <HardDrive size={20} />,
+      color: "text-orange-600",
+      percentage: parseFloat(storagePercentage), // Add this line
+    },
     { title: "Your Exports", value: "0", icon: <TrendingUp size={20} />, color: "text-cyan-600" },
-    { title: "Total Members", value: "7", icon: <Users size={20} />, color: "text-yellow-600" },
-    { title: " Your Avg. Session", value: "0h", icon: <Clock size={20} />, color: "text-red-600" },
+    { title: "Total Members", value: totalMembers.toString(), icon: <Users size={20} />, color: "text-yellow-600" },
+    { title: "Your Avg. Session", value: "0h", icon: <Clock size={20} />, color: "text-red-600" },
   ];
 
   useEffect(() => {
@@ -262,6 +403,16 @@ export default function DashboardPage() {
 
   return (
     <main className="flex-1 min-h-screen px-4 sm:px-6 lg:px-12 xl:px-20 transition-all duration-300 bg-transparent text-gray-900">
+      {/* Report Bug Button */}
+      <motion.button
+        className="fixed top-4 right-4 z-50 px-4 py-2 rounded-full bg-blue-600/90 text-white font-semibold shadow-lg transition-all duration-300 hover:bg-blue-700/90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => alert('Report a bug or give feedback')}
+      >
+        Feedback
+      </motion.button>
+      
       <div className="my-4 cursor-pointer hidden lg:block">
         <Header />
       </div>
@@ -270,10 +421,14 @@ export default function DashboardPage() {
       <section className="mb-12">
         <h2 className="text-xl sm:text-2xl font-semibold mb-6">Advanced Analytics</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4">
-          {metrics.slice(0, 4).map((metric, index) => <SmallMetricCard key={index} {...metric} />)}
+          {metrics.slice(0, 4).map((metric, index) => (
+            <SmallMetricCard key={index} {...metric} />
+          ))}
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 mt-4">
-          {metrics.slice(4).map((metric, index) => <SmallMetricCard key={index + 4} {...metric} />)}
+          {metrics.slice(4).map((metric, index) => (
+            <SmallMetricCard key={index + 4} {...metric} />
+          ))}
         </div>
       </section>
 
@@ -300,20 +455,21 @@ export default function DashboardPage() {
           </button>
         </div>
       </section>
+      
+      <div className="flex flex-wrap px-3 sm:px-4 lg:px-6 gap-6">
+        <div className="flex-1 min-w-[300px]">
+          <NewTemplates />
+        </div>
 
-      <div className="mt-1 px-3 sm:px-4 lg:px-6">
-        <NewTemplates />
+        <div className="flex-1 min-w-[300px] mt-2 ml-10">
+          <Certificates />
+        </div>
       </div>
 
-      <div className="mt-[-70px] px-3 sm:px-4 lg:px-6">
+      {/* Visiting Card below both */}
+      <div className="mt-[-20] px-3 sm:px-4 lg:px-6">
         <Visitingcard />
       </div>
-
-      <div className="mt-20 px-3 sm:px-4 lg:px-6">
-        <Certificates />
-      </div>
-
-
 
       <Footer />
     </main>

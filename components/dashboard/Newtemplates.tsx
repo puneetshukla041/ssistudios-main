@@ -40,76 +40,75 @@ const App = () => {
 
   return (
     <div className="flex flex-col justify-start items-start min-h-[50vh] bg-transparent font-sans p-2 sm:p-4">
-      {/* Section Heading */}
-      <motion.h2
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="text-lg sm:text-xl font-semibold text-gray-900 mb-6 pl-4 tracking-normal"
-      >
-        Poster Template Library
-      </motion.h2>
-
+  {/* Section Heading */}
+<motion.h2
+  initial={{ opacity: 0, x: -20 }}
+  animate={{ opacity: 1, x: 0 }}
+  transition={{ duration: 0.8, ease: "easeOut" }}
+  className="text-lg sm:text-xl font-bold font-['Be_Vietnam_Pro'] text-black mb-6 pl-60 tracking-normal"
+>
+  Poster Template Library
+</motion.h2>
       {/* Main Card */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className={`
-          w-full max-w-3xl bg-white/5 rounded-2xl p-3 sm:p-5 shadow-xl
-          flex flex-col md:flex-row items-center gap-3 sm:gap-5
-          backdrop-blur-lg border-2 border-white/20 hover:border-white/40 transition-all duration-300
-          transform hover:scale-[1.01]
-        `}
-      >
-        {/* Left: Poster Preview */}
-        <div className="md:w-1/2 w-full flex-shrink-0">
-          <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden shadow-lg">
-            <img
-              src={imageData.imageUrl}
-              alt={imageData.title}
-              className="object-cover w-full h-full transition-transform duration-300 hover:scale-105"
-            />
-          </div>
-        </div>
-
-{/* Right: Text + Button */}
-<div className="md:w-1/2 w-full text-center md:text-left flex flex-col">
-  <motion.h1
-    initial={{ opacity: 0, y: 15 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.3, duration: 0.6 }}
-    className="text-xl sm:text-2xl font-bold mb-1 text-gray-900"
-  >
-    {imageData.title}
-  </motion.h1>
-
-  <motion.p
-    initial={{ opacity: 0, y: 15 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.5, duration: 0.6 }}
-    className="text-gray-700 mb-2 text-xs sm:text-sm leading-relaxed"
-  >
-    {imageData.description}
-  </motion.p>
-
-{/* Flex wrapper for button to push it slightly left from the edge */}
-<div className="w-full flex justify-end">
-  <motion.button
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.7, duration: 0.6 }}
-    onClick={handleUseTemplate}
-    className="mr-29 bg-gray-900 text-white font-semibold py-1.5 px-3 rounded-full shadow-md border-2 border-blue-500 hover:bg-gray-800 transition-all duration-300 transform hover:scale-105 cursor-pointer text-xs"
-    disabled={isRedirecting}
-  >
-    Use this Template
-  </motion.button>
-
+<motion.div
+  initial={{ opacity: 0, scale: 0.95 }}
+  animate={{ opacity: 1, scale: 1 }}
+  transition={{ duration: 0.8, ease: "easeOut" }}
+  className="
+    w-full max-w-3xl bg-neutral-900/40 backdrop-blur-md rounded-xl p-4 shadow-xl
+    flex flex-col md:flex-row items-center gap-4
+    border border-white/10 hover:border-white/20 transition-all duration-300
+    transform hover:scale-[1.01]
+  "
+>
+  {/* Left: Preview */}
+  <div className="md:w-1/2 w-full flex-shrink-0">
+    <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden shadow-md">
+      <img
+        src={imageData.imageUrl}
+        alt={imageData.title}
+        className="object-cover w-full h-full transition-transform duration-300 hover:scale-105"
+      />
+    </div>
   </div>
-</div>
 
-      </motion.div>
+  {/* Right: Text + Button */}
+  <div className="md:w-1/2 w-full flex flex-col justify-between text-left">
+    <div>
+      <motion.h1
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.6 }}
+        className="text-xl font-bold mb-2 text-white"
+      >
+        {imageData.title}
+      </motion.h1>
+
+      <motion.p
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.6 }}
+        className="text-gray-300 mb-4 text-sm leading-relaxed"
+      >
+        {imageData.description}
+      </motion.p>
+    </div>
+
+    <div className="w-full flex justify-end">
+      <motion.button
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7, duration: 0.6 }}
+        onClick={handleUseTemplate}
+        className="bg-white/10 text-white font-semibold py-2 px-4 rounded-full shadow-md border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 cursor-pointer text-sm backdrop-blur-sm"
+        disabled={isRedirecting}
+      >
+        Use this Template
+      </motion.button>
+    </div>
+  </div>
+</motion.div>
+
 
       {/* Redirecting Overlay */}
       {isRedirecting && (
