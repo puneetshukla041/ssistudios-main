@@ -350,6 +350,22 @@ const BLEND_MODES: BlendMode[] = [
   'luminosity'
 ]
 
+// --- NEW: Define a single source of truth for default logo settings ---
+const DEFAULT_LOGO_STATE: Omit<LogoState, 'id' | 'imageSrc' | 'image'> = {
+  logoZoom: 100,
+  logoOpacity: 100,
+  logoBorderWidth: 0,
+  logoBorderColor: '#ffffff',
+  logoBlendMode: 'source-over',
+  logoHorizontalOffset: 0,
+  logoVerticalOffset: 0,
+  logoRadius: 20, // Default to 20px
+  backgroundType: 'original',
+  logoPlateHorizontalPadding: 15,
+  logoPlateVerticalPadding: 15,
+  logoPlateRadius: 20, // Default to 20px for white plate
+};
+
 // --- MAIN COMPONENT ---
 export default function PosterEditor() {
   const combinedCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -432,20 +448,7 @@ export default function PosterEditor() {
    */
   const resetSelectedLogoSettings = () => {
     if (selectedLogo) {
-      updateSelectedLogo({
-        logoZoom: 100,
-        logoOpacity: 100,
-        logoBorderWidth: 0,
-        logoBorderColor: '#ffffff',
-        logoBlendMode: 'source-over',
-        logoHorizontalOffset: 0,
-        logoVerticalOffset: 0,
-        logoRadius: 0,
-        backgroundType: 'original',
-        logoPlateHorizontalPadding: 15,
-        logoPlateVerticalPadding: 15,
-        logoPlateRadius: 0,
-      });
+      updateSelectedLogo(DEFAULT_LOGO_STATE);
     }
   };
 
@@ -671,23 +674,12 @@ renderedLogos.forEach((logo: RenderedLogo) => {
     setUploading(true);
     const objectUrl = URL.createObjectURL(file);
     
-    // Create a new logo state object
+    // Create a new logo state object using the default values
     const newLogo: LogoState = {
       id: crypto.randomUUID(), // Unique ID for each logo
       imageSrc: objectUrl,
       image: null,
-      logoZoom: 100,
-      logoOpacity: 100,
-      logoBorderWidth: 0,
-      logoBorderColor: '#ffffff',
-      logoBlendMode: 'source-over',
-      logoHorizontalOffset: 0,
-      logoVerticalOffset: 0,
-      logoRadius: 20, // Default to 20px rounded corners
-      backgroundType: 'original',
-      logoPlateHorizontalPadding: 15,
-      logoPlateVerticalPadding: 15,
-      logoPlateRadius: 20, // Default to 20px rounded corners for white plate
+      ...DEFAULT_LOGO_STATE, // Use the default state
     };
     
     setLogos(prevLogos => {
@@ -1078,8 +1070,8 @@ renderedLogos.forEach((logo: RenderedLogo) => {
                         label="Size"
                         value={selectedLogo.logoZoom}
                         unit="%"
-                        onReset={() => updateSelectedLogo({ logoZoom: 100 })}
-                        isDefault={selectedLogo.logoZoom === 100}
+                        onReset={() => updateSelectedLogo({ logoZoom: DEFAULT_LOGO_STATE.logoZoom })}
+                        isDefault={selectedLogo.logoZoom === DEFAULT_LOGO_STATE.logoZoom}
                       >
                         <input type="range" min="10" max="200" step="0.1" value={selectedLogo.logoZoom} onInput={handleLogoZoom} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600" />
                       </InputGroup>
@@ -1087,8 +1079,8 @@ renderedLogos.forEach((logo: RenderedLogo) => {
                         label="Rounded Corners"
                         value={selectedLogo.logoRadius}
                         unit="px"
-                        onReset={() => updateSelectedLogo({ logoRadius: 20 })} // Note: Default value is 20px now
-                        isDefault={selectedLogo.logoRadius === 20}
+                        onReset={() => updateSelectedLogo({ logoRadius: DEFAULT_LOGO_STATE.logoRadius })}
+                        isDefault={selectedLogo.logoRadius === DEFAULT_LOGO_STATE.logoRadius}
                       >
                         <input type="range" min="0" max="50" step="0.5" value={selectedLogo.logoRadius} onInput={handleLogoRadius} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600" />
                       </InputGroup>
@@ -1204,8 +1196,8 @@ renderedLogos.forEach((logo: RenderedLogo) => {
                         label="Horizontal"
                         value={selectedLogo.logoHorizontalOffset}
                         unit="%"
-                        onReset={() => updateSelectedLogo({ logoHorizontalOffset: 0 })}
-                        isDefault={selectedLogo.logoHorizontalOffset === 0}
+                        onReset={() => updateSelectedLogo({ logoHorizontalOffset: DEFAULT_LOGO_STATE.logoHorizontalOffset })}
+                        isDefault={selectedLogo.logoHorizontalOffset === DEFAULT_LOGO_STATE.logoHorizontalOffset}
                       >
                         <input type="range" min="-50" max="50" step="0.1" value={selectedLogo.logoHorizontalOffset} onInput={handleLogoHorizontalOffset} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600" />
                       </InputGroup>
@@ -1213,8 +1205,8 @@ renderedLogos.forEach((logo: RenderedLogo) => {
                         label="Vertical"
                         value={selectedLogo.logoVerticalOffset}
                         unit="%"
-                        onReset={() => updateSelectedLogo({ logoVerticalOffset: 0 })}
-                        isDefault={selectedLogo.logoVerticalOffset === 0}
+                        onReset={() => updateSelectedLogo({ logoVerticalOffset: DEFAULT_LOGO_STATE.logoVerticalOffset })}
+                        isDefault={selectedLogo.logoVerticalOffset === DEFAULT_LOGO_STATE.logoVerticalOffset}
                       >
                         <input type="range" min="-50" max="50" step="0.1" value={selectedLogo.logoVerticalOffset} onInput={handleLogoVerticalOffset} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600" />
                       </InputGroup>
@@ -1224,7 +1216,7 @@ renderedLogos.forEach((logo: RenderedLogo) => {
                       <div>
                         <div className="flex items-center justify-between text-zinc-400 text-xs font-medium mb-1">
                           <span>Blend Style</span>
-                          <ResetButton onReset={() => updateSelectedLogo({ logoBlendMode: 'source-over' })} isDefault={selectedLogo.logoBlendMode === 'source-over'} />
+                          <ResetButton onReset={() => updateSelectedLogo({ logoBlendMode: DEFAULT_LOGO_STATE.logoBlendMode })} isDefault={selectedLogo.logoBlendMode === DEFAULT_LOGO_STATE.logoBlendMode} />
                         </div>
                         <select
                           value={selectedLogo.logoBlendMode}
@@ -1242,8 +1234,8 @@ renderedLogos.forEach((logo: RenderedLogo) => {
                         label="Outline"
                         value={selectedLogo.logoBorderWidth}
                         unit="px"
-                        onReset={() => updateSelectedLogo({ logoBorderWidth: 0 })}
-                        isDefault={selectedLogo.logoBorderWidth === 0}
+                        onReset={() => updateSelectedLogo({ logoBorderWidth: DEFAULT_LOGO_STATE.logoBorderWidth })}
+                        isDefault={selectedLogo.logoBorderWidth === DEFAULT_LOGO_STATE.logoBorderWidth}
                       >
                         <input type="range" min="0" max="20" step="0.5" value={selectedLogo.logoBorderWidth} onInput={handleLogoBorderWidth} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600" />
                         <div className="flex items-center justify-between text-zinc-400 text-xs font-medium mt-2">
@@ -1258,13 +1250,13 @@ renderedLogos.forEach((logo: RenderedLogo) => {
                         <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
                           <span>Background Type</span>
                           <ResetButton
-                            onReset={() => updateSelectedLogo({ backgroundType: 'original', logoPlateRadius: 0 })}
-                            isDefault={selectedLogo.backgroundType === 'original'}
+                            onReset={() => updateSelectedLogo({ backgroundType: DEFAULT_LOGO_STATE.backgroundType })}
+                            isDefault={selectedLogo.backgroundType === DEFAULT_LOGO_STATE.backgroundType}
                           />
                         </div>
                         <div className="flex gap-2">
                           <button
-                            onClick={() => updateSelectedLogo({ backgroundType: 'white', logoPlateRadius: 20 })}
+                            onClick={() => updateSelectedLogo({ backgroundType: 'white', logoPlateRadius: DEFAULT_LOGO_STATE.logoPlateRadius })}
                             className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm rounded-lg border transition-colors cursor-pointer ${selectedLogo.backgroundType === 'white' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-zinc-700 border-zinc-600 text-zinc-400 hover:bg-zinc-600'}`}
                           >
                             <Square size={16} fill="white" stroke="white" /> White Plate
@@ -1289,8 +1281,8 @@ renderedLogos.forEach((logo: RenderedLogo) => {
                                       label="Plate Curvature"
                                       value={selectedLogo.logoPlateRadius}
                                       unit="px"
-                                      onReset={() => updateSelectedLogo({ logoPlateRadius: 20 })}
-                                      isDefault={selectedLogo.logoPlateRadius === 20}
+                                      onReset={() => updateSelectedLogo({ logoPlateRadius: DEFAULT_LOGO_STATE.logoPlateRadius })}
+                                      isDefault={selectedLogo.logoPlateRadius === DEFAULT_LOGO_STATE.logoPlateRadius}
                                   >
                                       <input type="range" min="0" max="50" step="0.5" value={selectedLogo.logoPlateRadius} onInput={handleLogoPlateRadius} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600" />
                                   </InputGroup>
@@ -1298,8 +1290,8 @@ renderedLogos.forEach((logo: RenderedLogo) => {
                                       label="Horizontal Padding"
                                       value={selectedLogo.logoPlateHorizontalPadding}
                                       unit="%"
-                                      onReset={() => updateSelectedLogo({ logoPlateHorizontalPadding: 15 })}
-                                      isDefault={selectedLogo.logoPlateHorizontalPadding === 15}
+                                      onReset={() => updateSelectedLogo({ logoPlateHorizontalPadding: DEFAULT_LOGO_STATE.logoPlateHorizontalPadding })}
+                                      isDefault={selectedLogo.logoPlateHorizontalPadding === DEFAULT_LOGO_STATE.logoPlateHorizontalPadding}
                                   >
                                       <input type="range" min="0" max="100" step="0.1" value={selectedLogo.logoPlateHorizontalPadding} onInput={handleLogoPlateHorizontalPadding} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600" />
                                   </InputGroup>
@@ -1307,8 +1299,8 @@ renderedLogos.forEach((logo: RenderedLogo) => {
                                       label="Vertical Padding"
                                       value={selectedLogo.logoPlateVerticalPadding}
                                       unit="%"
-                                      onReset={() => updateSelectedLogo({ logoPlateVerticalPadding: 15 })}
-                                      isDefault={selectedLogo.logoPlateVerticalPadding === 15}
+                                      onReset={() => updateSelectedLogo({ logoPlateVerticalPadding: DEFAULT_LOGO_STATE.logoPlateVerticalPadding })}
+                                      isDefault={selectedLogo.logoPlateVerticalPadding === DEFAULT_LOGO_STATE.logoPlateVerticalPadding}
                                   >
                                       <input type="range" min="0" max="100" step="0.1" value={selectedLogo.logoPlateVerticalPadding} onInput={handleLogoPlateVerticalPadding} className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-grab active:cursor-grabbing accent-blue-600" />
                                   </InputGroup>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence, useAnimation } from 'framer-motion'
+import { motion, AnimatePresence, useAnimation, Variants } from 'framer-motion'
 import Image from "next/image"
 
 import Logo from './Logo'
@@ -32,7 +32,6 @@ type MenuItem = {
   mobileOnly?: boolean
 }
 
-// (Menu data remains the same)
 const menu: MenuItem[] = [
   { name: 'Dashboard', icon: Home, path: '/dashboard' },
   {
@@ -40,11 +39,10 @@ const menu: MenuItem[] = [
     icon: FileImage,
     path: "/bgremover",
   },
-  // --- New "ID Card Maker" button added here ---
   {
     name: 'ID Card Maker',
-    icon: LayoutTemplate, // Using LayoutTemplate from lucide-react
-    path: "/idcard", // Assuming this is the path for the ID Card Maker page
+    icon: LayoutTemplate,
+    path: "/idcard",
   },
   {
     name: 'Posters',
@@ -90,6 +88,22 @@ const menu: MenuItem[] = [
   { name: 'Logout', icon: LogOut, mobileOnly: true },
 ]
 
+// --- Animation Variants for Staggered Menu Items ---
+const menuContainerVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1, // Adjusted for a slower animation
+    },
+  },
+};
+
+const menuItemVariants: Variants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+};
+
 // --- Sidebar Component ---
 type SidebarProps = {
   forceActive?: string
@@ -106,6 +120,7 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
 
   // --- MongoDB Progress Bar State & Controls ---
   const [usedStorageMB, setUsedStorageMB] = useState(0)
+  const [usedStorageKB, setUsedStorageKB] = useState(0)
   const [totalStorageMB, setTotalStorageMB] = useState(500)
   const strokeControlsMongo = useAnimation()
   const iconControls = useAnimation()
@@ -120,6 +135,7 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
       const mongoData = await responseMongo.json();
 
       if (mongoData.success) {
+        setUsedStorageKB(mongoData.data.usedStorageKB);
         setUsedStorageMB(mongoData.data.usedStorageMB);
         setTotalStorageMB(mongoData.data.totalStorageMB);
       } else {
@@ -128,6 +144,7 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
     } catch (error) {
       console.error('Failed to fetch storage data:', error);
       setUsedStorageMB(0);
+      setUsedStorageKB(0);
       setTotalStorageMB(500);
     } finally {
       iconControls.stop();
@@ -145,15 +162,13 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
 
   useEffect(() => {
     const storagePercent = (usedStorageMB / totalStorageMB) * 100
-    const circumference = 2 * Math.PI * 60
+    const circumference = 2 * Math.PI * 40
     const offset = circumference - (circumference * (storagePercent / 100))
     strokeControlsMongo.start({
       strokeDashoffset: isNaN(offset) ? circumference : offset,
       transition: { duration: 1.5, ease: "easeInOut" }
     })
   }, [strokeControlsMongo, usedStorageMB, totalStorageMB])
-
-  // --- End MongoDB Progress Bar State & Controls ---
 
   // Control body overflow on sidebar open/close
   useEffect(() => {
@@ -226,7 +241,14 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
           </div>
         </div>
       </div>
-      <nav className="flex-1 px-4 py-4 overflow-y-auto no-scrollbar">
+      
+      {/* Updated `nav` element for animations */}
+      <motion.nav
+        className="flex-1 px-4 py-4 overflow-y-auto no-scrollbar"
+        variants={menuContainerVariants} // Removed conditional
+        initial="hidden"
+        animate="show"
+      >
         {menu.map((item) => {
           if (item.mobileOnly && !isMobile) return null
 
@@ -235,7 +257,8 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
           const active = isParentActive(item)
 
           return (
-            <div key={item.name} className="mb-1.5">
+            // Updated `div` with motion variant
+            <motion.div key={item.name} className="mb-1.5" variants={menuItemVariants}>
               <button
                 onClick={() => {
                   if (item.name === 'Logout') {
@@ -328,20 +351,22 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
                   })}
                 </motion.div>
               )}
-            </div>
+            </motion.div>
           )
         })}
 
         {/* MongoDB Progress Bar Section */}
         {(isMobile || isDesktopHovered) && (
-          <div className="mt-8">
-            <h3 className="text-sm font-semibold text-gray-400 mb-1 px-3 flex items-center justify-between">
+          <motion.div 
+            className="mt-8"
+            variants={menuItemVariants}
+          >
+            <h3 className="text-sm font-semibold text-gray-400 mb-1 px-2 flex items-center justify-between">
               <span className="flex-1">Storage Used</span>
               <motion.button
                 onClick={handleRefresh}
                 animate={iconControls}
                 whileHover={{ scale: 1.1 }}
-                // --- Updated cursor class here ---
                 className="text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"
                 aria-label="Refresh storage data"
               >
@@ -352,12 +377,23 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
             <div className="flex justify-center items-center">
               <div className="relative w-38 h-38">
                 <div className="absolute inset-0 rounded-full bg-cyan-900/10 blur-2xl z-0 shadow-[0_0_30px_#06b6d4aa]" />
-                <svg className="w-full h-full rotate-[-90deg] relative z-10" viewBox="0 0 144 144">
-                  <circle cx="72" cy="72" r="60" className="stroke-zinc-800" strokeWidth="10" fill="none" />
+
+                <svg className="w-full h-full rotate-[-90deg] relative z-10" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="40" className="stroke-zinc-800" strokeWidth="6" fill="none" />
                   <motion.circle
-                    cx="72" cy="72" r="60" stroke="url(#gradient-mongo)" strokeWidth="10" fill="none" strokeDasharray="377" strokeLinecap="round" animate={strokeControlsMongo}
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    stroke="url(#gradient-mongo)"
+                    strokeWidth="6"
+                    fill="none"
+                    strokeDasharray="251" // 2πr = ~251 for r=40
+                    strokeLinecap="round"
+                    animate={strokeControlsMongo}
+                    transition={{ duration: 1.2, ease: "easeInOut" }}
                     style={{ filter: 'drop-shadow(0 0 6px #0ea5e9)' }}
                   />
+
                   <defs>
                     <linearGradient id="gradient-mongo" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#06b6d4" />
@@ -366,10 +402,11 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
                     </linearGradient>
                   </defs>
                 </svg>
+
                 <div className="absolute inset-0 flex items-center justify-center z-20 text-center">
                   <div className="flex flex-col items-center">
                     <span className="text-white text-base font-mono font-extrabold tracking-tight leading-tight">
-                      {`${usedStorageMB.toFixed(1)}MB`}
+                      {usedStorageMB < 1 ? `${usedStorageKB.toFixed(1)}KB` : `${usedStorageMB.toFixed(1)}MB`}
                     </span>
                     <span className="text-xs text-cyan-400 font-medium mt-1">
                       {`${(usedStorageMB / totalStorageMB * 100).toFixed(1)}% of ${totalStorageMB}MB`}
@@ -378,14 +415,16 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
-      </nav>
+      </motion.nav>
 
-      <div
+      {/* Footer section is also updated to use motion variant */}
+      <motion.div
         className={`p-4 border-t border-gray-800/50 w-full mt-auto hidden lg:block transition-opacity duration-300 ${
           isDesktopHovered ? "opacity-100" : "opacity-0"
         }`}
+        variants={isDesktopHovered ? menuItemVariants : undefined}
       >
         {/* Download Android App Button */}
         <a
@@ -453,7 +492,7 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
         >
           Logout
         </button>
-      </div>
+      </motion.div>
     </aside>
   )
 

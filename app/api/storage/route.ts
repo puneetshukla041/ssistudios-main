@@ -32,9 +32,13 @@ export async function GET() {
         // The 'dataSize' field in the stats object represents the storage size in bytes across all collections.
         // It is a more general metric than `collection.stats()`.
         const usedStorageBytes = dbStats.dataSize || 0;
+        
+        // Calculate storage in MB and KB
+        const usedStorageKB = usedStorageBytes / 1024;
         const usedStorageMB = usedStorageBytes / (1024 * 1024);
 
         const data = {
+            usedStorageKB: parseFloat(usedStorageKB.toFixed(2)),
             usedStorageMB: parseFloat(usedStorageMB.toFixed(2)),
             totalStorageMB: TOTAL_STORAGE_MB,
         };
