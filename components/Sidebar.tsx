@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence, useAnimation, Variants } from 'framer-motion'
 import Image from "next/image"
+import { Tooltip } from 'react-tooltip'
 
 import Logo from './Logo'
 import {
@@ -18,9 +19,14 @@ import {
   LogOut,
   Layout,
   RotateCcw,
+  Star,
+  Folder,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter, usePathname } from 'next/navigation'
+
+// Import the UserAccess interface to use for strong typing
+import type { UserAccess } from '@/contexts/AuthContext';
 
 // --- Menu Data ---
 type MenuItem = {
@@ -30,6 +36,7 @@ type MenuItem = {
   children?: { name: string; path: string }[]
   onClick?: () => void
   mobileOnly?: boolean
+  requiredAccess?: keyof UserAccess;
 }
 
 const menu: MenuItem[] = [
@@ -38,15 +45,24 @@ const menu: MenuItem[] = [
     name: 'Bg Remover',
     icon: FileImage,
     path: "/bgremover",
+    requiredAccess: 'bgRemover',
+  },
+  {
+    name: 'Image Enhancer',
+    icon: Star,
+    path: '/image-enhancer',
+    requiredAccess: 'imageEnhancer',
   },
   {
     name: 'ID Card Maker',
     icon: LayoutTemplate,
     path: "/idcard",
+    requiredAccess: 'idCard',
   },
   {
     name: 'Posters',
     icon: Layout,
+    requiredAccess: 'posterEditor',
     children: [
       { name: 'Single Logo Editor', path: '/selector/posters/single' },
       { name: 'Multiple Logos Editor', path: '/selector/posters/multiple' },
@@ -56,6 +72,7 @@ const menu: MenuItem[] = [
   {
     name: 'Visiting Cards',
     icon: FileText,
+    requiredAccess: 'visitingCard',
     children: [
       { name: 'Dark Theme', path: '/selector/visitingcard/dark' },
       { name: 'Light Theme', path: '/selector/visitingcard/light' },
@@ -64,6 +81,7 @@ const menu: MenuItem[] = [
   {
     name: 'Certificates',
     icon: Layers,
+    requiredAccess: 'certificateEditor',
     children: [
       { name: 'Certificate Generator', path: '/selector/certificate' },
       { name: 'Saved Certificates', path: '/certificates/saved' },
@@ -72,6 +90,7 @@ const menu: MenuItem[] = [
   {
     name: 'Branding Assets',
     icon: Palette,
+    requiredAccess: 'assets',
     children: [
       { name: 'Logo Library', path: '/logo' },
       { name: 'Fonts & Colors', path: '/theme' },
@@ -94,7 +113,7 @@ const menuContainerVariants: Variants = {
   show: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1, // Adjusted for a slower animation
+      staggerChildren: 0.1,
     },
   },
 };
@@ -112,7 +131,7 @@ type SidebarProps = {
 }
 
 export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarProps) {
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [expanded, setExpanded] = useState<string[]>([])
@@ -245,22 +264,38 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
       {/* Updated `nav` element for animations */}
       <motion.nav
         className="flex-1 px-4 py-4 overflow-y-auto no-scrollbar"
-        variants={menuContainerVariants} // Removed conditional
+        variants={menuContainerVariants}
         initial="hidden"
         animate="show"
       >
         {menu.map((item) => {
+          // This is the access check logic.
+          const hasAccess = !item.requiredAccess || (user?.access?.[item.requiredAccess] ?? false);
+          // A new variable to make the code cleaner.
+          const isRestricted = !hasAccess;
+
+          // If the user doesn't have the required access, don't render it
           if (item.mobileOnly && !isMobile) return null
 
           const Icon = item.icon
           const isOpenMenuItem = expanded.includes(item.name)
           const active = isParentActive(item)
 
+          // Unify the button styling for all states (restricted, active, default).
+          const buttonClass = `
+            text-white hover:text-white transition-all duration-200
+            ${isRestricted ? 'opacity-40 cursor-not-allowed' : 'opacity-100 cursor-pointer'}
+            ${active && !isRestricted ? 'font-bold bg-white/10' : 'font-normal hover:bg-white/5'}
+            ${item.name === 'Logout' ? 'text-red-500 hover:bg-red-500/10 hover:text-red-400' : ''}
+          `;
+
           return (
-            // Updated `div` with motion variant
+            // Updated `div` with motion variant 
             <motion.div key={item.name} className="mb-1.5" variants={menuItemVariants}>
               <button
+                // Check if the user has access before executing the action.
                 onClick={() => {
+                  if (isRestricted) return; 
                   if (item.name === 'Logout') {
                     handleLogout()
                     return
@@ -272,22 +307,17 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
                     if (isOpen) toggleSidebar()
                   }
                 }}
-                className={`group flex items-center justify-between w-full px-3 py-2.5 rounded-lg transition-all duration-200 relative
-                  ${active ? 'text-white font-medium' : 'text-gray-400 hover:text-white'}
-                  ${
-                    item.name === 'Logout'
-                      ? 'text-red-500 hover:bg-red-500/10 hover:text-red-400'
-                      : 'hover:bg-white/5 active:scale-[0.98] cursor-pointer'
-                  }
-                `}
+                className={`group flex items-center justify-between w-full px-3 py-2.5 rounded-lg transition-all duration-200 relative ${buttonClass}`}
                 type="button"
+                // Add tooltip attributes here
+                data-tooltip-id={`tooltip-${item.name.replace(/\s/g, '-')}`}
+                data-tooltip-content="Take permission from admin"
+                disabled={isRestricted} // Disable the button.
               >
                 <div className="relative flex items-center gap-3 overflow-hidden">
                   <Icon
                     size={18}
-                    className={`transition-colors flex-shrink-0 ${
-                      active ? 'text-white' : 'text-gray-400 group-hover:text-white'
-                    }`}
+                    className={`transition-colors flex-shrink-0 text-white ${isRestricted ? 'opacity-40' : 'opacity-100'}`}
                   />
                   <span
                     className={`text-sm whitespace-nowrap transition-opacity duration-200 ${
@@ -299,7 +329,7 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
                 </div>
                 <div
                   className={`absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full transition-opacity duration-300 ${
-                    active ? 'opacity-100 bg-white shadow-glow' : 'opacity-0'
+                    active && !isRestricted ? 'opacity-100 bg-white shadow-glow' : 'opacity-0'
                   }`}
                 />
                 {item.children &&
@@ -307,16 +337,20 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
                     isOpenMenuItem ? (
                       <ChevronDown
                         size={16}
-                        className="text-gray-500 group-hover:text-gray-300 transition-transform duration-200 flex-shrink-0 rotate-180"
+                        className={`text-gray-500 group-hover:text-gray-300 transition-transform duration-200 flex-shrink-0 rotate-180 ${isRestricted ? 'opacity-0' : 'opacity-100'}`}
                       />
                     ) : (
                       <ChevronRight
                         size={16}
-                        className="text-gray-500 group-hover:text-gray-300 transition-transform duration-200 flex-shrink-0"
+                        className={`text-gray-500 group-hover:text-gray-300 transition-transform duration-200 flex-shrink-0 ${isRestricted ? 'opacity-0' : 'opacity-100'}`}
                       />
                     )
                   ) : null)}
               </button>
+              {/* Conditionally render Tooltip for restricted items */}
+              {isRestricted && (
+                <Tooltip id={`tooltip-${item.name.replace(/\s/g, '-')}`} className="z-50" />
+              )}
               {item.children && (
                 <motion.div
                   initial={false}
@@ -326,24 +360,27 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
                 >
                   {item.children.map((child) => {
                     const childIsActive = isChildActive(child.path)
+                    // Apply a similar unified styling approach to child items
+                    const childButtonClass = `
+                      text-white transition-all duration-200
+                      ${isRestricted ? 'opacity-40 cursor-not-allowed' : 'opacity-100 cursor-pointer'}
+                      ${childIsActive && !isRestricted ? 'font-bold' : 'font-normal hover:bg-white/5'}
+                    `;
                     return (
                       <button
                         key={child.path}
-                        onClick={() => {
+                        onClick={() => { 
+                          if (isRestricted) return;
                           if (child.path !== pathname) {
                             router.push(child.path)
                             if (isOpen) toggleSidebar()
                           }
                         }}
-                        className={`block w-full text-left px-3 py-2 text-sm rounded-md transition-colors duration-200 mb-1
-                          ${
-                            childIsActive
-                              ? 'text-white font-medium'
-                              : 'text-gray-400 hover:text-white'
-                          }
-                          hover:bg-white/5 active:scale-[0.98] cursor-pointer
-                        `}
+                        className={`block w-full text-left px-3 py-2 text-sm rounded-md transition-colors duration-200 mb-1 ${childButtonClass}`}
                         type="button"
+                        data-tooltip-id={`tooltip-${child.path.replace(/\s/g, '-')}`}
+                        data-tooltip-content="Take permission from admin"
+                        disabled={isRestricted}
                       >
                         {child.name}
                       </button>
@@ -357,7 +394,7 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
 
         {/* MongoDB Progress Bar Section */}
         {(isMobile || isDesktopHovered) && (
-          <motion.div 
+          <motion.div
             className="mt-8"
             variants={menuItemVariants}
           >

@@ -1,5 +1,3 @@
-// contexts/AuthContext.tsx
-// NEW FILE: This centralizes all authentication logic.
 'use client'
 
 import {
@@ -11,10 +9,21 @@ import {
 } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 
-// Define the shape of the user and context
+// Define the shape of the user and their permissions
+export interface UserAccess {
+  posterEditor?: boolean;
+  certificateEditor?: boolean;
+  visitingCard?: boolean;
+  idCard?: boolean;
+  bgRemover?: boolean;
+  imageEnhancer?: boolean;
+  assets?: boolean;
+}
+
 interface User {
   id: string;
   username: string;
+  access: UserAccess;
 }
 
 interface AuthContextType {
@@ -22,64 +31,81 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (user: User) => void;
   logout: () => void;
-  isLoading: boolean; // To handle initial auth check
+  updateUserAccess: (newAccess: UserAccess) => void;
+  isLoading: boolean;
 }
 
 // Create the context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// The AuthProvider component that will wrap your app
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
 
-  // On initial load, check for a persisted user session
+  // Fetch user from backend on first load (always fresh data)
   useEffect(() => {
-    try {
-      const storedUser = sessionStorage.getItem('user');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
+    const loadUser = async () => {
+      try {
+        const storedUser = sessionStorage.getItem('user');
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+
+        // 🔑 Always sync from backend (if session exists)
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.user) {
+            setUser(data.user);
+            sessionStorage.setItem('user', JSON.stringify(data.user));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load user session:", error);
+        sessionStorage.removeItem('user');
+        setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to parse user from sessionStorage", error);
-      sessionStorage.removeItem('user');
-    } finally {
-      setIsLoading(false);
-    }
+    };
+
+    loadUser();
   }, []);
 
-  // This crucial effect handles all redirection logic
+  // Handle page protection & redirects
   useEffect(() => {
-    // Don't redirect until the initial loading is complete
-    if (isLoading) {
-      return;
-    }
+    if (isLoading) return;
 
     const isAuthPage = pathname === '/login';
 
-    // If user is not logged in and not on the login page, redirect them
     if (!user && !isAuthPage) {
-      router.push('/login');
+      router.replace('/login');
     }
 
-    // If user IS logged in and tries to access the login page, redirect to dashboard
     if (user && isAuthPage) {
-      router.push('/dashboard');
+      router.replace('/dashboard');
     }
   }, [user, isLoading, pathname, router]);
 
   const login = (userData: User) => {
     setUser(userData);
     sessionStorage.setItem('user', JSON.stringify(userData));
-    // No need to push here; the effect above will handle it.
   };
 
   const logout = () => {
     setUser(null);
     sessionStorage.removeItem('user');
-    // The effect will handle redirecting to /login.
+    router.replace('/login');
+  };
+
+  const updateUserAccess = (newAccess: UserAccess) => {
+    if (user) {
+      const updatedUser = { ...user, access: { ...user.access, ...newAccess } };
+      setUser(updatedUser);
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
+    }
   };
 
   const value = {
@@ -87,26 +113,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isAuthenticated: !!user,
     login,
     logout,
+    updateUserAccess,
     isLoading,
   };
 
-  // Render a loading state or null while checking auth to prevent content flashes
-  if (isLoading) {
-    // You can replace this with a full-page loading spinner
-    return null; 
-  }
+  if (isLoading) return null;
 
   return (
     <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
   );
 };
 
-// Custom hook to easily access the auth context
+// Custom hook
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
-
