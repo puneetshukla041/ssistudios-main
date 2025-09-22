@@ -197,7 +197,7 @@ if (certificateNo) {
     };
 
     generatePdf();
-  }, [firstName, lastName, hospitalName, programName, operationText, doi, certificateNo]); // ✅ Added certificateNo dep
+  }, [firstName, lastName, hospitalName, programName, operationText, doi, certificateNo]); 
 
   const handleExport = () => {
     if (previewUrl) {
@@ -235,6 +235,7 @@ if (certificateNo) {
                 placeholder="Enter first name"
                 focusColor="#4A90E2"
               />
+
               <InputComponent
                 label="Last Name"
                 type="text"
