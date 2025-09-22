@@ -1,3 +1,4 @@
+// Sidebar.tsx
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
@@ -24,6 +25,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter, usePathname } from 'next/navigation'
+import LoadingScreen from './LoadingScreen'
 
 // Import the UserAccess interface to use for strong typing
 import type { UserAccess } from '@/contexts/AuthContext';
@@ -107,6 +109,14 @@ const menu: MenuItem[] = [
   { name: 'Logout', icon: LogOut, mobileOnly: true },
 ]
 
+// Define the menu items that should NOT show the loading animation
+const NO_LOADING_ANIMATION_PATHS = new Set([
+  '/dashboard',
+  '/logo',
+  '/theme',
+  '/userprofile',
+]);
+
 // --- Animation Variants for Staggered Menu Items ---
 const menuContainerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -137,58 +147,11 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
   const [expanded, setExpanded] = useState<string[]>([])
   const [isHovered, setIsHovered] = useState(false)
 
-  // --- MongoDB Progress Bar State & Controls ---
-  const [usedStorageMB, setUsedStorageMB] = useState(0)
-  const [usedStorageKB, setUsedStorageKB] = useState(0)
-  const [totalStorageMB, setTotalStorageMB] = useState(500)
-  const strokeControlsMongo = useAnimation()
-  const iconControls = useAnimation()
+  // State to manage redirection and loading
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 
-  const fetchStorageData = useCallback(async () => {
-    iconControls.start({ rotate: 360, transition: { duration: 1, ease: 'linear', repeat: Infinity } });
-    try {
-      const responseMongo = await fetch('/api/storage');
-      if (!responseMongo.ok) {
-        throw new Error(`HTTP error! status: ${responseMongo.status}`);
-      }
-      const mongoData = await responseMongo.json();
-
-      if (mongoData.success) {
-        setUsedStorageKB(mongoData.data.usedStorageKB);
-        setUsedStorageMB(mongoData.data.usedStorageMB);
-        setTotalStorageMB(mongoData.data.totalStorageMB);
-      } else {
-        console.error('API call was not successful:', mongoData.error);
-      }
-    } catch (error) {
-      console.error('Failed to fetch storage data:', error);
-      setUsedStorageMB(0);
-      setUsedStorageKB(0);
-      setTotalStorageMB(500);
-    } finally {
-      iconControls.stop();
-      iconControls.set({ rotate: 0 });
-    }
-  }, [iconControls]);
-
-  const handleRefresh = useCallback(() => {
-    fetchStorageData()
-  }, [fetchStorageData])
-
-  useEffect(() => {
-    fetchStorageData()
-  }, [fetchStorageData])
-
-  useEffect(() => {
-    const storagePercent = (usedStorageMB / totalStorageMB) * 100
-    const circumference = 2 * Math.PI * 40
-    const offset = circumference - (circumference * (storagePercent / 100))
-    strokeControlsMongo.start({
-      strokeDashoffset: isNaN(offset) ? circumference : offset,
-      transition: { duration: 1.5, ease: "easeInOut" }
-    })
-  }, [strokeControlsMongo, usedStorageMB, totalStorageMB])
-
+  // --- Removed all MongoDB Progress Bar State & Controls ---
+  
   // Control body overflow on sidebar open/close
   useEffect(() => {
     if (isOpen) {
@@ -293,18 +256,22 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
             // Updated `div` with motion variant 
             <motion.div key={item.name} className="mb-1.5" variants={menuItemVariants}>
               <button
-                // Check if the user has access before executing the action.
                 onClick={() => {
                   if (isRestricted) return; 
                   if (item.name === 'Logout') {
-                    handleLogout()
-                    return
+                    handleLogout();
+                    return;
                   }
                   if (item.children) {
-                    toggle(item.name)
+                    toggle(item.name);
                   } else if (item.path && item.path !== pathname) {
-                    router.push(item.path)
-                    if (isOpen) toggleSidebar()
+                    // Check if the current item should have a loading animation
+                    if (NO_LOADING_ANIMATION_PATHS.has(item.path)) {
+                      router.push(item.path);
+                    } else {
+                      setRedirectUrl(item.path);
+                    }
+                    if (isOpen) toggleSidebar();
                   }
                 }}
                 className={`group flex items-center justify-between w-full px-3 py-2.5 rounded-lg transition-all duration-200 relative ${buttonClass}`}
@@ -347,7 +314,6 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
                     )
                   ) : null)}
               </button>
-              {/* Conditionally render Tooltip for restricted items */}
               {isRestricted && (
                 <Tooltip id={`tooltip-${item.name.replace(/\s/g, '-')}`} className="z-50" />
               )}
@@ -360,7 +326,6 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
                 >
                   {item.children.map((child) => {
                     const childIsActive = isChildActive(child.path)
-                    // Apply a similar unified styling approach to child items
                     const childButtonClass = `
                       text-white transition-all duration-200
                       ${isRestricted ? 'opacity-40 cursor-not-allowed' : 'opacity-100 cursor-pointer'}
@@ -372,8 +337,12 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
                         onClick={() => { 
                           if (isRestricted) return;
                           if (child.path !== pathname) {
-                            router.push(child.path)
-                            if (isOpen) toggleSidebar()
+                            if (NO_LOADING_ANIMATION_PATHS.has(child.path)) {
+                              router.push(child.path);
+                            } else {
+                              setRedirectUrl(child.path);
+                            }
+                            if (isOpen) toggleSidebar();
                           }
                         }}
                         className={`block w-full text-left px-3 py-2 text-sm rounded-md transition-colors duration-200 mb-1 ${childButtonClass}`}
@@ -392,68 +361,8 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
           )
         })}
 
-        {/* MongoDB Progress Bar Section */}
-        {(isMobile || isDesktopHovered) && (
-          <motion.div
-            className="mt-8"
-            variants={menuItemVariants}
-          >
-            <h3 className="text-sm font-semibold text-gray-400 mb-1 px-2 flex items-center justify-between">
-              <span className="flex-1">Storage Used</span>
-              <motion.button
-                onClick={handleRefresh}
-                animate={iconControls}
-                whileHover={{ scale: 1.1 }}
-                className="text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"
-                aria-label="Refresh storage data"
-              >
-                <RotateCcw size={18} />
-              </motion.button>
-            </h3>
-            <p className="text-[11px] text-gray-100 px-3 mb-2">(MongoDB)</p>
-            <div className="flex justify-center items-center">
-              <div className="relative w-38 h-38">
-                <div className="absolute inset-0 rounded-full bg-cyan-900/10 blur-2xl z-0 shadow-[0_0_30px_#06b6d4aa]" />
+        {/* --- Removed the entire MongoDB Progress Bar Section from here --- */}
 
-                <svg className="w-full h-full rotate-[-90deg] relative z-10" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="40" className="stroke-zinc-800" strokeWidth="6" fill="none" />
-                  <motion.circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    stroke="url(#gradient-mongo)"
-                    strokeWidth="6"
-                    fill="none"
-                    strokeDasharray="251" // 2πr = ~251 for r=40
-                    strokeLinecap="round"
-                    animate={strokeControlsMongo}
-                    transition={{ duration: 1.2, ease: "easeInOut" }}
-                    style={{ filter: 'drop-shadow(0 0 6px #0ea5e9)' }}
-                  />
-
-                  <defs>
-                    <linearGradient id="gradient-mongo" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#06b6d4" />
-                      <stop offset="50%" stopColor="#3b82f6" />
-                      <stop offset="100%" stopColor="#8b5cf6" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-
-                <div className="absolute inset-0 flex items-center justify-center z-20 text-center">
-                  <div className="flex flex-col items-center">
-                    <span className="text-white text-base font-mono font-extrabold tracking-tight leading-tight">
-                      {usedStorageMB < 1 ? `${usedStorageKB.toFixed(1)}KB` : `${usedStorageMB.toFixed(1)}MB`}
-                    </span>
-                    <span className="text-xs text-cyan-400 font-medium mt-1">
-                      {`${(usedStorageMB / totalStorageMB * 100).toFixed(1)}% of ${totalStorageMB}MB`}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
       </motion.nav>
 
       {/* Footer section is also updated to use motion variant */}
@@ -577,6 +486,13 @@ export default function Sidebar({ forceActive, isOpen, toggleSidebar }: SidebarP
               {renderSidebarContent(true)}
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Render the loading screen if redirectUrl is set */}
+      <AnimatePresence>
+        {redirectUrl && (
+          <LoadingScreen redirectUrl={redirectUrl} />
         )}
       </AnimatePresence>
 
