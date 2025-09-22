@@ -1,205 +1,570 @@
-'use client';
+"use client";
 
-import React, { useRef, useState } from 'react';
-import axios from 'axios';
-import { CloudArrowUpIcon, ArrowDownTrayIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useRef, useState, useEffect, useCallback } from "react";
+import axios from "axios";
+import {
+  CloudArrowUpIcon,
+  ArrowDownTrayIcon,
+  TrashIcon,
+  XCircleIcon,
+  CheckCircleIcon,
+  SparklesIcon,
+  PhotoIcon,
+  ArrowPathIcon,
+  PauseCircleIcon,
+} from "@heroicons/react/24/outline";
+import { motion, AnimatePresence } from "framer-motion";
+
+/**
+ * Big upgrade for BgRemover UI + logic
+ * - paste support
+ * - upload & processing progress
+ * - cancel jobs
+ * - file validation
+ * - preview + download
+ * - toasts + friendly messages
+ *
+ * NOTE: requires an API route at /api/remove-bg that accepts `image` FormData
+ * and returns the processed image blob (PNG ideally). Adjust `axios` config
+ * if your API returns a wrapped JSON containing a URL instead.
+ */
+
+const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024; // 8 MB
+const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+
+type Toast = { id: string; type: "info" | "success" | "error"; message: string };
 
 export default function BgRemoverFullPage() {
   const fileInput = useRef<HTMLInputElement | null>(null);
-  const [image, setImage] = useState<string | null>(null);
-  const [output, setOutput] = useState<string | null>(null);
-  const [dragActive, setDragActive] = useState(false);
+  const currentController = useRef<AbortController | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [outputUrl, setOutputUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0); // 0..100
+  const [processingProgress, setProcessingProgress] = useState<number | null>(null); // maybe server sends processing updates (optional)
+  const [dragActive, setDragActive] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [fitMode, setFitMode] = useState<"contain" | "cover">("contain");
+  const [optimiseForWeb, setOptimiseForWeb] = useState(true);
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setImage(URL.createObjectURL(e.target.files[0]));
-      setOutput(null);
-    }
+  // helper: show toast
+  const pushToast = useCallback((type: Toast["type"], message: string) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    setToasts((t) => [...t, { id, type, message }]);
+    // auto-dismiss
+    setTimeout(() => {
+      setToasts((t) => t.filter((x) => x.id !== id));
+    }, 6000);
+  }, []);
+
+  // Clean up created object URLs to avoid memory leaks
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (outputUrl) URL.revokeObjectURL(outputUrl);
+    };
+  }, [previewUrl, outputUrl]);
+
+  // Handle file selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    handleNewFile(f);
   };
 
+  // Validate & set file
+  const handleNewFile = (f: File) => {
+    // Validate type
+    if (!ALLOWED_TYPES.includes(f.type)) {
+      pushToast("error", "Unsupported file type. Use PNG/JPEG/WebP.");
+      return;
+    }
+
+    // Validate size
+    if (f.size > MAX_FILE_SIZE_BYTES) {
+      pushToast("error", `File too large. Max ${(MAX_FILE_SIZE_BYTES / 1024 / 1024).toFixed(0)} MB.`);
+      return;
+    }
+
+    // Revoke previous preview
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+    if (outputUrl) {
+      URL.revokeObjectURL(outputUrl);
+      setOutputUrl(null);
+    }
+
+    setFile(f);
+    setPreviewUrl(URL.createObjectURL(f));
+    setUploadProgress(0);
+    setProcessingProgress(null);
+    pushToast("info", `Loaded ${f.name} — ${Math.round(f.size / 1024)} KB`);
+  };
+
+  // Drag handlers
   const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragover') setDragActive(true);
-    if (e.type === 'dragleave') setDragActive(false);
+    if (e.type === "dragover") setDragActive(true);
+    if (e.type === "dragleave") setDragActive(false);
   };
-
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setImage(URL.createObjectURL(e.dataTransfer.files[0]));
-      setOutput(null);
+    const f = e.dataTransfer.files?.[0];
+    if (f) handleNewFile(f);
+  };
+
+  // Paste support (paste image from clipboard)
+  useEffect(() => {
+    const pasteHandler = (e: ClipboardEvent) => {
+      if (!e.clipboardData) return;
+      const items = e.clipboardData.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        if (it.type.startsWith("image/")) {
+          const blob = it.getAsFile();
+          if (blob) {
+            handleNewFile(blob);
+            e.preventDefault();
+            return;
+          }
+        }
+      }
+    };
+    window.addEventListener("paste", pasteHandler);
+    return () => window.removeEventListener("paste", pasteHandler);
+  }, [previewUrl, outputUrl, pushToast]);
+
+  // Cancel upload/processing
+  const cancelProcessing = () => {
+    if (currentController.current) {
+      currentController.current.abort();
+      currentController.current = null;
+      setLoading(false);
+      setUploadProgress(0);
+      setProcessingProgress(null);
+      pushToast("info", "Cancelled");
     }
   };
 
+  // Submit to backend
   const handleRemoveBG = async () => {
-    if (!fileInput.current?.files?.[0]) return;
+    if (!file) {
+      pushToast("error", "No file selected.");
+      return;
+    }
+
     setLoading(true);
-    const formData = new FormData();
-    formData.append('image', fileInput.current.files[0]);
+    setUploadProgress(0);
+    setProcessingProgress(null);
+    setOutputUrl(null);
+
+    const controller = new AbortController();
+    currentController.current = controller;
 
     try {
-      const response = await axios.post('/api/remove-bg', formData, {
-        responseType: 'blob',
+      const form = new FormData();
+      form.append("image", file);
+      // optional parameter: optimize for web / keep format
+      form.append("optimize", optimiseForWeb ? "1" : "0");
+
+      const res = await axios.post("/api/remove-bg", form, {
+        responseType: "blob",
+        signal: controller.signal,
+        onUploadProgress: (ev) => {
+          if (ev.total) {
+            const percent = Math.round((ev.loaded / ev.total) * 100);
+            setUploadProgress(percent);
+          }
+        },
+        // If your backend sends progress events for processing, you'll need SSE / websocket.
+        // Here we only show upload progress. We set "processing" state when download starts.
       });
-      const url = URL.createObjectURL(response.data);
-      setOutput(url);
-    } catch (err) {
-      console.error(err);
-      alert('Failed to remove background.');
+
+      // If server returns JSON with URL instead of blob, adapt here.
+      const blob = res.data as Blob;
+      const mime = blob.type || "image/png";
+
+      const objUrl = URL.createObjectURL(blob);
+      setOutputUrl(objUrl);
+      pushToast("success", "Background removed successfully!");
+    } catch (err: any) {
+      if (axios.isCancel(err) || err?.name === "CanceledError") {
+        pushToast("info", "Request cancelled.");
+      } else {
+        console.error("remove-bg error:", err);
+        pushToast("error", "Failed to remove background. Try again later.");
+      }
     } finally {
       setLoading(false);
+      setUploadProgress(0);
+      currentController.current = null;
     }
   };
 
+  // Reset everything
   const handleReset = () => {
-    setImage(null);
-    setOutput(null);
-    if (fileInput.current) {
-      fileInput.current.value = '';
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+    if (outputUrl) {
+      URL.revokeObjectURL(outputUrl);
+      setOutputUrl(null);
+    }
+    setFile(null);
+    setUploadProgress(0);
+    setProcessingProgress(null);
+    setLoading(false);
+    if (fileInput.current) fileInput.current.value = "";
+  };
+
+  // Download output
+  const handleDownload = () => {
+    if (!outputUrl) return;
+    const el = document.createElement("a");
+    el.href = outputUrl;
+    el.download = "bg-removed.png";
+    document.body.appendChild(el);
+    el.click();
+    el.remove();
+  };
+
+  // Copy output link
+  const handleCopyLink = async () => {
+    if (!outputUrl) return pushToast("error", "No result to copy.");
+    try {
+      await navigator.clipboard.writeText(outputUrl);
+      pushToast("success", "Result URL copied to clipboard.");
+    } catch {
+      pushToast("error", "Failed to copy to clipboard.");
     }
   };
 
   return (
-<div className="min-h-screen w-full flex flex-col items-center justify-center p-4 sm:p-8 text-white font-sans" style={{ backgroundColor: '#161719' }}>
-      <motion.h1 
-        initial={{ opacity: 0, y: -20 }} 
-        animate={{ opacity: 1, y: 0 }} 
-        transition={{ duration: 0.5 }} 
-        className="text-4xl font-extrabold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600"
-      >
-        Background Remover
-      </motion.h1>
+<div
+  className="min-h-screen w-full flex flex-col items-center justify-start p-6 
+             bg-transparent text-white mt-10 ml-[-30px]"
+>
 
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }} 
-        animate={{ opacity: 1, scale: 1 }} 
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="w-full max-w-5xl bg-gray-900 rounded-2xl shadow-2xl p-6 sm:p-10 flex flex-col items-center gap-8"
-      >
-        <div
-          className={`relative w-full h-64 flex flex-col items-center justify-center border-4 border-dashed rounded-2xl transition-all duration-300 cursor-pointer ${
-            dragActive ? 'border-cyan-400 bg-gray-800' : 'border-gray-700 hover:border-cyan-400'
-          }`}
-          onDragOver={handleDrag}
-          onDragLeave={handleDrag}
-          onDrop={handleDrop}
-          onClick={() => fileInput.current?.click()}
-        >
-          <input
-            ref={fileInput}
-            type="file"
-            accept="image/png, image/jpeg"
-            onChange={handleUpload}
-            className="hidden"
-          />
-          <AnimatePresence mode="wait">
-            {!image ? (
-              <motion.div
-                key="upload-prompt"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="flex flex-col items-center gap-2 text-gray-400"
-              >
-                <CloudArrowUpIcon className="w-12 h-12" />
-                <span className="text-lg font-medium">Drag & Drop or Click to Upload</span>
-                <span className="text-sm">PNG, JPG, or JPEG up to 5MB</span>
-              </motion.div>
-            ) : (
-              <motion.img
-                key="image-preview"
-                src={image}
-                alt="preview"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.3 }}
-                className="max-h-full max-w-full object-contain rounded-xl pointer-events-none p-4"
+      <div className="w-full max-w-6xl">
+<motion.h1
+  initial={{ opacity: 0, y: -10 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.35 }}
+  className="text-4xl sm:text-5xl font-extrabold mb-6 
+             -mt-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"
+>
+  Background Remover — Next Level
+</motion.h1>
+
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left: uploader + controls */}
+          <div className="lg:col-span-7">
+            <div
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={handleDrop}
+              onClick={() => fileInput.current?.click()}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") fileInput.current?.click();
+              }}
+              className={`relative h-80 rounded-2xl border-2 border-dashed transition-all duration-200 flex items-center justify-center p-6 cursor-pointer
+                ${dragActive ? "border-cyan-400 bg-slate-800/60" : "border-slate-700 bg-slate-900/40"}`}
+            >
+              <input
+                ref={fileInput}
+                type="file"
+                accept={ALLOWED_TYPES.join(",")}
+                onChange={handleFileChange}
+                className="hidden"
               />
-            )}
-          </AnimatePresence>
+
+              {/* If no file: show upload prompt */}
+              {!previewUrl ? (
+                <div className="flex flex-col items-center gap-3 text-slate-300 select-none">
+                  <div className="p-3 rounded-full bg-gradient-to-br from-cyan-600/20 to-blue-600/20 border border-slate-700">
+                    <CloudArrowUpIcon className="h-12 w-12 text-cyan-400" />
+                  </div>
+                  <div className="text-lg font-semibold">Drag & drop, paste, or click to upload</div>
+                  <div className="text-sm text-slate-400">
+                    PNG / JPG / WEBP — up to {(MAX_FILE_SIZE_BYTES / 1024 / 1024).toFixed(0)} MB
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInput.current?.click();
+                      }}
+                      className="px-4 py-2 bg-cyan-600 text-black rounded-md font-medium hover:scale-[1.02] transition"
+                    >
+                      Select File
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        pushToast("info", "Tip: press Ctrl/Cmd+V to paste an image from clipboard.");
+                      }}
+                      className="px-3 py-2 border border-slate-700 rounded-md text-sm text-slate-300 hover:bg-slate-800"
+                    >
+                      How to paste
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="relative w-full h-full rounded-lg overflow-hidden bg-black/40 border border-slate-700 p-3">
+                    <img
+                      src={previewUrl}
+                      alt="preview"
+                      className={`max-h-full max-w-full object-${fitMode} mx-auto`}
+                      style={{ transform: "translateZ(0)" }}
+                    />
+                    {/* file info */}
+                    <div className="absolute left-3 top-3 bg-slate-900/60 px-2 py-1 rounded-md text-xs">
+                      <div className="font-medium">{file?.name}</div>
+                      <div className="text-slate-400">{Math.round((file?.size || 0) / 1024)} KB</div>
+                    </div>
+
+                    {/* small action buttons on preview */}
+                    <div className="absolute right-3 top-3 flex flex-col gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFitMode((m) => (m === "contain" ? "cover" : "contain"));
+                        }}
+                        title="Toggle fit"
+                        className="bg-slate-800/70 p-2 rounded-md hover:bg-slate-700"
+                      >
+                        <PhotoIcon className="h-5 w-5 text-slate-200" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReset();
+                        }}
+                        title="Reset"
+                        className="bg-red-700/80 p-2 rounded-md hover:bg-red-600"
+                      >
+                        <TrashIcon className="h-5 w-5 text-white" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Controls */}
+            <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="flex-1 flex gap-3">
+                <button
+                  onClick={() => fileInput.current?.click()}
+                  className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-slate-700/60 to-slate-600/40 border border-slate-700 hover:from-slate-600 hover:to-slate-500 transition text-white font-semibold"
+                >
+                  Add / Replace
+                </button>
+
+                <button
+                  onClick={handleReset}
+                  className="px-4 py-3 rounded-xl border border-slate-700 text-slate-200 hover:bg-slate-800"
+                >
+                  Reset
+                </button>
+              </div>
+
+              <div className="flex gap-2 items-center">
+                <label className="flex items-center gap-2 text-sm text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={optimiseForWeb}
+                    onChange={(e) => setOptimiseForWeb(e.target.checked)}
+                    className="accent-cyan-500"
+                  />
+                  Optimize output
+                </label>
+
+                <button
+                  onClick={handleRemoveBG}
+                  disabled={!file || loading}
+                  className={`px-4 py-3 rounded-xl font-semibold text-black bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg transition transform ${
+                    !file || loading ? "opacity-60 cursor-not-allowed" : "hover:scale-[1.02]"
+                  }`}
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <ArrowPathIcon className="h-5 w-5 animate-spin text-white" />
+                      Processing...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <SparklesIcon className="h-5 w-5 text-white" />
+                      Remove Background
+                    </span>
+                  )}
+                </button>
+
+                {loading && (
+                  <button
+                    onClick={cancelProcessing}
+                    className="px-3 py-3 rounded-xl border border-red-600 text-red-400 hover:bg-red-700/10"
+                    title="Cancel"
+                    aria-label="Cancel processing"
+                  >
+                    <PauseCircleIcon className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Progress bars */}
+            <div className="mt-4">
+              <AnimatePresence>
+                {(uploadProgress > 0 && uploadProgress < 100) || loading ? (
+                  <motion.div
+                    key="progress"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 6 }}
+                    className="space-y-2"
+                  >
+                    {/* Upload */}
+                    {uploadProgress > 0 && (
+                      <div>
+                        <div className="text-xs text-slate-300 mb-1">Upload: {uploadProgress}%</div>
+                        <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-2 bg-cyan-400 transition-all"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Processing (indeterminate if server not providing) */}
+                    {loading && uploadProgress >= 100 && (
+                      <div>
+                        <div className="flex items-center justify-between text-xs text-slate-300 mb-1">
+                          <div>Processing</div>
+                          <div>{processingProgress ? `${processingProgress}%` : "..."}</div>
+                        </div>
+                        <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-2 bg-blue-500 animate-[pulse_2s_infinite] opacity-80"
+                            style={{ width: processingProgress ? `${processingProgress}%` : "50%" }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Right: preview results */}
+          <div className="lg:col-span-5 flex flex-col gap-4">
+            <div className="rounded-2xl border border-slate-700 bg-slate-900/40 p-4 min-h-[180px] flex flex-col">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="text-sm text-slate-300 font-semibold">Result Preview</div>
+                  <div className="text-xs text-slate-400">Original vs processed</div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleDownload}
+                    disabled={!outputUrl}
+                    className={`px-3 py-2 rounded-md border border-slate-700 text-sm ${
+                      !outputUrl ? "opacity-50 cursor-not-allowed" : "hover:bg-slate-800"
+                    }`}
+                    title="Download result"
+                  >
+                    <ArrowDownTrayIcon className="h-5 w-5 inline" />
+                  </button>
+                  <button
+                    onClick={handleCopyLink}
+                    disabled={!outputUrl}
+                    className={`px-3 py-2 rounded-md border border-slate-700 text-sm ${
+                      !outputUrl ? "opacity-50 cursor-not-allowed" : "hover:bg-slate-800"
+                    }`}
+                    title="Copy result URL"
+                  >
+                    Copy Link
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-3 flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="rounded-lg overflow-hidden border border-slate-800 bg-slate-900/60 p-2 flex flex-col items-center justify-center">
+                  <div className="text-xs text-slate-400 mb-2">Original</div>
+                  {previewUrl ? (
+                    <img src={previewUrl} alt="original" className="max-h-40 object-contain" />
+                  ) : (
+                    <div className="text-slate-500 text-sm">No file</div>
+                  )}
+                </div>
+
+                <div className="rounded-lg overflow-hidden border border-slate-800 bg-slate-900/60 p-2 flex flex-col items-center justify-center">
+                  <div className="text-xs text-slate-400 mb-2">Result</div>
+                  {outputUrl ? (
+                    <img src={outputUrl} alt="result" className="max-h-40 object-contain" />
+                  ) : (
+                    <div className="text-slate-500 text-sm">No result yet</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
+                <div>Tip: paste an image (Ctrl/Cmd+V) to start faster</div>
+                <div>Format: PNG (transparent background recommended)</div>
+              </div>
+            </div>
+
+            {/* Small notes / actions */}
+            <div className="rounded-2xl border border-slate-700 p-3 text-slate-300">
+              <div className="flex items-center gap-3">
+                <XCircleIcon className="h-5 w-5 text-red-500" />
+                <div className="text-sm">Removal is automatic - results depend on image complexity.</div>
+              </div>
+              <div className="mt-2 text-xs text-slate-400">
+                For best results: high-contrast subject, moderate resolution, avoid extreme compression or tiny faces.
+              </div>
+            </div>
+          </div>
         </div>
 
-        <AnimatePresence>
-          {image && !output && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.3 }}
-              className="flex gap-4"
-            >
-              <motion.button
-                onClick={handleRemoveBG}
-                disabled={loading}
-                className="px-8 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+        {/* Toasts */}
+        <div className="fixed right-6 bottom-6 z-50 flex flex-col gap-2">
+          <AnimatePresence>
+            {toasts.map((t) => (
+              <motion.div
+                key={t.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className={`px-4 py-2 rounded-md shadow-lg max-w-xs ${
+                  t.type === "error"
+                    ? "bg-red-600 text-white"
+                    : t.type === "success"
+                    ? "bg-green-600 text-white"
+                    : "bg-slate-800 text-slate-100"
+                }`}
               >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Processing...</span>
-                  </>
-                ) : (
-                  'Remove Background'
-                )}
-              </motion.button>
-              <motion.button
-                onClick={handleReset}
-                className="px-6 py-3 bg-gray-700 text-gray-300 rounded-full shadow-lg hover:bg-gray-600 transition-colors duration-300 flex items-center gap-2"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <TrashIcon className="w-5 h-5" />
-                <span>Reset</span>
-              </motion.button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {output && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.5 }}
-              className="w-full flex flex-col md:flex-row gap-6 mt-6 justify-center"
-            >
-              <div className="flex flex-col items-center bg-gray-800 p-6 rounded-xl shadow-md flex-1">
-                <h2 className="mb-4 text-xl font-semibold text-gray-300">Original</h2>
-                <div className="bg-gray-700 bg-grid-pattern p-2 rounded-lg">
-                  <img src={image!} alt="original" className="max-h-96 rounded-lg object-contain" />
-                </div>
-              </div>
-              <div className="flex flex-col items-center bg-gray-800 p-6 rounded-xl shadow-md flex-1">
-                <h2 className="mb-4 text-xl font-semibold text-gray-300">Result</h2>
-                <div className="bg-gray-700 bg-grid-pattern p-2 rounded-lg">
-                  <img src={output} alt="result" className="max-h-96 rounded-lg object-contain" />
-                </div>
-                <a
-                  href={output}
-                  download="output.png"
-                  className="mt-6 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
-                >
-                  <ArrowDownTrayIcon className="w-5 h-5" />
-                  <span>Download PNG</span>
-                </a>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+                {t.message}
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </div>
     </div>
   );
 }
