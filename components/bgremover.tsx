@@ -41,12 +41,15 @@ export default function BgRemoverFullPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [outputUrl, setOutputUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<number>(0); // 0..100
-  const [processingProgress, setProcessingProgress] = useState<number | null>(null); // maybe server sends processing updates (optional)
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [processingProgress, setProcessingProgress] = useState<number | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [fitMode, setFitMode] = useState<"contain" | "cover">("contain");
   const [optimiseForWeb, setOptimiseForWeb] = useState(true);
+  const [downloadState, setDownloadState] = useState<
+    "idle" | "downloading" | "downloaded" | "uploading_s3" | "uploaded_s3" | "saving_workspace" | "saved_workspace" | "error"
+  >("idle");
 
   // helper: show toast
   const pushToast = useCallback((type: Toast["type"], message: string) => {
@@ -75,19 +78,16 @@ export default function BgRemoverFullPage() {
 
   // Validate & set file
   const handleNewFile = (f: File) => {
-    // Validate type
     if (!ALLOWED_TYPES.includes(f.type)) {
       pushToast("error", "Unsupported file type. Use PNG/JPEG/WebP.");
       return;
     }
 
-    // Validate size
     if (f.size > MAX_FILE_SIZE_BYTES) {
       pushToast("error", `File too large. Max ${(MAX_FILE_SIZE_BYTES / 1024 / 1024).toFixed(0)} MB.`);
       return;
     }
 
-    // Revoke previous preview
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
@@ -164,6 +164,7 @@ export default function BgRemoverFullPage() {
     setUploadProgress(0);
     setProcessingProgress(null);
     setOutputUrl(null);
+    setDownloadState("idle");
 
     const controller = new AbortController();
     currentController.current = controller;
@@ -171,7 +172,6 @@ export default function BgRemoverFullPage() {
     try {
       const form = new FormData();
       form.append("image", file);
-      // optional parameter: optimize for web / keep format
       form.append("optimize", optimiseForWeb ? "1" : "0");
 
       const res = await axios.post("/api/remove-bg", form, {
@@ -183,14 +183,9 @@ export default function BgRemoverFullPage() {
             setUploadProgress(percent);
           }
         },
-        // If your backend sends progress events for processing, you'll need SSE / websocket.
-        // Here we only show upload progress. We set "processing" state when download starts.
       });
 
-      // If server returns JSON with URL instead of blob, adapt here.
       const blob = res.data as Blob;
-      const mime = blob.type || "image/png";
-
       const objUrl = URL.createObjectURL(blob);
       setOutputUrl(objUrl);
       pushToast("success", "Background removed successfully!");
@@ -222,18 +217,73 @@ export default function BgRemoverFullPage() {
     setUploadProgress(0);
     setProcessingProgress(null);
     setLoading(false);
+    setDownloadState("idle");
     if (fileInput.current) fileInput.current.value = "";
   };
 
-  // Download output
-  const handleDownload = () => {
-    if (!outputUrl) return;
-    const el = document.createElement("a");
-    el.href = outputUrl;
-    el.download = "bg-removed.png";
-    document.body.appendChild(el);
-    el.click();
-    el.remove();
+  // New multi-step download logic
+  const handleDownload = async () => {
+    if (!outputUrl) {
+      pushToast("error", "No result to download.");
+      return;
+    }
+    setDownloadState("downloading");
+
+    try {
+      // Step 1: Download locally
+      const response = await fetch(outputUrl);
+      const blob = await response.blob();
+      const a = document.createElement("a");
+      a.href = outputUrl;
+      a.download = "bg-removed.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setDownloadState("downloaded");
+      pushToast("success", "File downloaded to your PC!");
+
+      // Step 2: Upload to S3
+// Step 2: Upload to S3
+setDownloadState("uploading_s3");
+const arrayBuffer = await blob.arrayBuffer();
+const base64 = btoa(
+  new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
+);
+const fileName = `bg-removed-${Date.now()}.${blob.type.split("/")[1] || "png"}`;
+
+// Pass mimeType
+const res = await fetch("/api/upload", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    fileBase64: base64,
+    fileName,
+    folder: "bg-removed",
+    mimeType: blob.type, // ✅ Pass MIME type dynamically
+  }),
+});
+
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setDownloadState("uploaded_s3");
+        pushToast("success", `Uploaded to S3: ${data.url}`);
+      } else {
+        throw new Error(data.message || "S3 upload failed.");
+      }
+
+      // Step 3: Simulate saving to workspace
+      setDownloadState("saving_workspace");
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setDownloadState("saved_workspace");
+      pushToast("success", "Saved to your workspace!");
+
+    } catch (err) {
+      console.error(err);
+      setDownloadState("error");
+      pushToast("error", "An error occurred during the download process.");
+    } finally {
+      setTimeout(() => setDownloadState("idle"), 3000); // Reset state after a delay
+    }
   };
 
   // Copy output link
@@ -248,22 +298,20 @@ export default function BgRemoverFullPage() {
   };
 
   return (
-<div
-  className="min-h-screen w-full flex flex-col items-center justify-start p-6 
-             bg-transparent text-white mt-10 ml-[-30px]"
->
-
+    <div
+      className="min-h-screen w-full flex flex-col items-center justify-start p-6 
+                 bg-transparent text-white mt-10 ml-[-30px]"
+    >
       <div className="w-full max-w-6xl">
-<motion.h1
-  initial={{ opacity: 0, y: -10 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.35 }}
-  className="text-4xl sm:text-5xl font-extrabold mb-6 
-             -mt-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"
->
-  Background Remover — Next Level
-</motion.h1>
-
+        <motion.h1
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="text-4xl sm:text-5xl font-extrabold mb-6 
+                      -mt-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"
+        >
+          Background Remover — Next Level
+        </motion.h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left: uploader + controls */}
@@ -478,23 +526,12 @@ export default function BgRemoverFullPage() {
                   <div className="text-sm text-slate-300 font-semibold">Result Preview</div>
                   <div className="text-xs text-slate-400">Original vs processed</div>
                 </div>
-
                 <div className="flex gap-2">
                   <button
-                    onClick={handleDownload}
-                    disabled={!outputUrl}
-                    className={`px-3 py-2 rounded-md border border-slate-700 text-sm ${
-                      !outputUrl ? "opacity-50 cursor-not-allowed" : "hover:bg-slate-800"
-                    }`}
-                    title="Download result"
-                  >
-                    <ArrowDownTrayIcon className="h-5 w-5 inline" />
-                  </button>
-                  <button
                     onClick={handleCopyLink}
-                    disabled={!outputUrl}
+                    disabled={!outputUrl || downloadState !== "idle"}
                     className={`px-3 py-2 rounded-md border border-slate-700 text-sm ${
-                      !outputUrl ? "opacity-50 cursor-not-allowed" : "hover:bg-slate-800"
+                      !outputUrl || downloadState !== "idle" ? "opacity-50 cursor-not-allowed" : "hover:bg-slate-800"
                     }`}
                     title="Copy result URL"
                   >
@@ -522,13 +559,111 @@ export default function BgRemoverFullPage() {
                   )}
                 </div>
               </div>
-
-              <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
-                <div>Tip: paste an image (Ctrl/Cmd+V) to start faster</div>
-                <div>Format: PNG (transparent background recommended)</div>
-              </div>
             </div>
 
+            {/* New: "Next Level" Download Progress UI */}
+            {outputUrl && (
+              <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold text-slate-300">
+                    Download Options
+                  </div>
+                  {downloadState !== "idle" && (
+                    <motion.button
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      onClick={() => setDownloadState("idle")}
+                      className="text-slate-400 hover:text-white transition"
+                      title="Reset"
+                    >
+                      <ArrowPathIcon className="h-5 w-5" />
+                    </motion.button>
+                  )}
+                </div>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Download to PC */}
+                  <div
+                    className={`flex flex-col items-center justify-center p-3 rounded-md transition-colors ${
+                      downloadState === "downloading" ? "bg-cyan-900/40" : ""
+                    }`}
+                  >
+                    <ArrowDownTrayIcon
+                      className={`h-6 w-6 transition-all ${
+                        downloadState === "downloading" ? "text-cyan-400 animate-bounce" : "text-slate-500"
+                      }`}
+                    />
+                    <div className="text-sm text-slate-300 mt-2">
+                      Download to PC
+                      {downloadState === "downloading" && (
+                        <span className="text-xs text-cyan-400 ml-1">...</span>
+                      )}
+                      {downloadState === "downloaded" && (
+                        <CheckCircleIcon className="h-4 w-4 text-green-500 ml-1 inline" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Upload to AWS S3 */}
+                  <div
+                    className={`flex flex-col items-center justify-center p-3 rounded-md transition-colors ${
+                      downloadState === "uploading_s3" ? "bg-blue-900/40" : ""
+                    }`}
+                  >
+                    <CloudArrowUpIcon
+                      className={`h-6 w-6 transition-all ${
+                        downloadState === "uploading_s3" ? "text-blue-400 animate-pulse" : "text-slate-500"
+                      }`}
+                    />
+                    <div className="text-sm text-slate-300 mt-2">
+                      Upload to S3
+                      {downloadState === "uploading_s3" && (
+                        <span className="text-xs text-blue-400 ml-1">...</span>
+                      )}
+                      {downloadState === "uploaded_s3" && (
+                        <CheckCircleIcon className="h-4 w-4 text-green-500 ml-1 inline" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Save to Workspace */}
+                  <div
+                    className={`flex flex-col items-center justify-center p-3 rounded-md transition-colors ${
+                      downloadState === "saving_workspace" ? "bg-purple-900/40" : ""
+                    }`}
+                  >
+                    <SparklesIcon
+                      className={`h-6 w-6 transition-all ${
+                        downloadState === "saving_workspace" ? "text-purple-400 animate-spin" : "text-slate-500"
+                      }`}
+                    />
+                    <div className="text-sm text-slate-300 mt-2">
+                      Save to Workspace
+                      {downloadState === "saving_workspace" && (
+                        <span className="text-xs text-purple-400 ml-1">...</span>
+                      )}
+                      {downloadState === "saved_workspace" && (
+                        <CheckCircleIcon className="h-4 w-4 text-green-500 ml-1 inline" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* The main download button */}
+                <motion.button
+                  onClick={handleDownload}
+                  disabled={downloadState !== "idle"}
+                  className={`w-full mt-4 px-4 py-3 rounded-xl font-semibold text-black bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg transition transform ${
+                    downloadState !== "idle" ? "opacity-60 cursor-not-allowed" : "hover:scale-[1.02]"
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <ArrowDownTrayIcon className="h-5 w-5" />
+                    Download & Save
+                  </span>
+                </motion.button>
+              </div>
+            )}
+            
             {/* Small notes / actions */}
             <div className="rounded-2xl border border-slate-700 p-3 text-slate-300">
               <div className="flex items-center gap-3">

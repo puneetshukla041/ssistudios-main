@@ -158,14 +158,67 @@ export default function Editor() {
     generatePdf();
   }, [firstName, lastName, designation, phone, email]);
 
-  const handleExport = () => {
-    if (previewUrl) {
-      const link = document.createElement("a");
-      link.href = previewUrl;
-      link.download = "updated.pdf";
-      link.click();
+const handleExport = async () => {
+  if (!previewUrl) return;
+  setIsLoading(true);
+
+  try {
+    // Step 1: Fetch the generated PDF blob from previewUrl
+    const response = await fetch(previewUrl);
+    const blob = await response.blob();
+
+    // Step 2: Convert PDF blob to Base64 for S3
+    const arrayBuffer = await blob.arrayBuffer();
+    const base64 = btoa(
+      new Uint8Array(arrayBuffer)
+        .reduce((data, byte) => data + String.fromCharCode(byte), "")
+    );
+
+    const fileName = `updated-${Date.now()}.pdf`;
+
+    // Replace these with your actual user data from auth/session
+    const userId = "USER_ID_HERE";
+    const username = "USERNAME_HERE";
+
+    // Step 3: Upload to API
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fileBase64: base64,
+        fileName,
+        folder: "visiting-card-dark-theme",
+        mimeType: "application/pdf",
+        userId,
+        username,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.url) {
+      console.log("PDF uploaded to S3:", data.url);
+      alert(`PDF successfully uploaded to S3:\n${data.url}`);
+
+      // Optional: download locally
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } else {
+      throw new Error(data.error || "S3 upload failed");
     }
-  };
+  } catch (error) {
+    console.error("Export failed:", error);
+    alert("Failed to export PDF. Check console for details.");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
 <div className="min-h-screen w-full bg-[#161719] text-white font-sans flex justify-center items-center p-8 mt-[-32] mb-[-40] ml-12 mr-5">

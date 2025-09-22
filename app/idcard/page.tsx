@@ -1,9 +1,18 @@
-// src/components/App.tsx
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb } from "pdf-lib";
-import { Calendar, Upload, Image as ImageIcon, XCircle } from "lucide-react";
+import {
+  Calendar,
+  Upload,
+  Image as ImageIcon,
+  XCircle,
+  CheckCircle,
+  CloudUpload,
+  FileText,
+  Save,
+  Download,
+} from "lucide-react";
 
 // Helper component for text input fields
 interface InputProps {
@@ -102,7 +111,10 @@ export default function App() {
   const [bloodGroup, setBloodGroup] = useState("");
   const [userImage, setUserImage] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [exportStep, setExportStep] = useState<
+    "idle" | "exporting" | "uploading" | "downloading" | "complete" | "error"
+  >("idle");
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // New state for image positioning and dragging
@@ -113,9 +125,7 @@ export default function App() {
 
   useEffect(() => {
     const generatePdf = async () => {
-      setIsLoading(true);
       try {
-        // Fetch the template PDF from the public folder
         const existingPdfBytes = await fetch("/idcard/idcard.pdf").then((res) =>
           res.arrayBuffer()
         );
@@ -123,7 +133,6 @@ export default function App() {
 
         pdfDoc.registerFontkit(fontkit);
 
-        // Load fonts from the public folder
         const soraFont = await pdfDoc.embedFont(
           await fetch("/fonts/Sora-Regular.ttf").then((res) =>
             res.arrayBuffer()
@@ -145,14 +154,12 @@ export default function App() {
           )
         );
 
-        // Access the second page of the PDF to draw the dynamic content
         if (pdfDoc.getPages().length < 2) {
           pdfDoc.addPage();
         }
         const secondPage = pdfDoc.getPages()[1];
         const { width: pageWidth, height: pageHeight } = secondPage.getSize();
 
-        // --- Dynamic font sizing helper ---
         const getDynamicFontSize = (
           text: string,
           font: any,
@@ -168,13 +175,10 @@ export default function App() {
           return fontSize;
         };
 
-        // --- Text positions ---
         const FULL_NAME_Y_POS = 50;
         const DESIGNATION_Y_POS = 38;
         const ID_CARD_NO_Y_POS = 16;
-        const IMAGE_SIZE = 50;
 
-        // --- Full Name ---
         if (fullName) {
           const capitalizedFullName = fullName.toUpperCase();
           const MAX_FULL_NAME_WIDTH = pageWidth * 0.8;
@@ -198,7 +202,6 @@ export default function App() {
           });
         }
 
-        // --- Designation (center + auto shrink) ---
         if (designation) {
           const titleCaseDesignation = toTitleCase(designation);
           const MAX_DESIGNATION_WIDTH = pageWidth * 0.7;
@@ -222,7 +225,6 @@ export default function App() {
           });
         }
 
-        // --- ID Card No ---
         if (idCardNo) {
           const formattedIdCardNo = `#${idCardNo}`;
           const fontSize = 16;
@@ -240,7 +242,6 @@ export default function App() {
           });
         }
 
-        // --- Blood Group with image ---
         if (bloodGroup) {
           const bloodGroupImagePath = `/bloodgroup/${bloodGroup
             .toLowerCase()
@@ -289,7 +290,6 @@ export default function App() {
           }
         }
 
-        // --- User Image with drag offset ---
         if (userImage) {
           try {
             const imageBytes = await fetch(userImage).then((res) =>
@@ -305,11 +305,10 @@ export default function App() {
             if (image) {
               const photoWidth = 80;
               const photoHeight = 126;
-              const xPos = pageWidth / 2 - photoWidth / 2 + imageXOffset; // Apply X offset
-              const yPos = 89 + imageYOffset; // Apply Y offset
+              const xPos = pageWidth / 2 - photoWidth / 2 + imageXOffset;
+              const yPos = 89 + imageYOffset;
               const slopeHeight = 47;
 
-              // Preprocess image in canvas to apply slope
               const img = new Image();
               img.src = userImage;
               await new Promise((resolve) => (img.onload = resolve));
@@ -350,7 +349,6 @@ export default function App() {
           }
         }
 
-        // Save + Preview
         const pdfBytes = await pdfDoc.save();
         const blob = new Blob([new Uint8Array(pdfBytes)], {
           type: "application/pdf",
@@ -359,20 +357,65 @@ export default function App() {
         setPreviewUrl(url);
       } catch (error) {
         console.error("Failed to generate PDF:", error);
-      } finally {
-        setIsLoading(false);
       }
     };
     generatePdf();
-  }, [fullName, designation, idCardNo, bloodGroup, userImage, imageXOffset, imageYOffset]); // Add dependencies
+  }, [
+    fullName,
+    designation,
+    idCardNo,
+    bloodGroup,
+    userImage,
+    imageXOffset,
+    imageYOffset,
+  ]);
 
-  // Handler to export the PDF
-  const handleExport = () => {
-    if (previewUrl) {
+  const handleExport = async () => {
+    if (!previewUrl || exportStep !== "idle") return;
+
+    try {
+      setExportStep("uploading");
+      setFeedbackMessage("Uploading to AWS...");
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // This part requires a backend endpoint to handle the upload.
+      // We will simulate a successful upload for this example.
+      const blob = await fetch(previewUrl).then((res) => res.blob());
+      const arrayBuffer = await blob.arrayBuffer();
+      const base64File = btoa(
+        new Uint8Array(arrayBuffer).reduce(
+          (data, byte) => data + String.fromCharCode(byte),
+          ""
+        )
+      );
+
+      // In a real app, you would send this to your backend.
+      // For this example, we'll just log it.
+      console.log("Simulating upload of file to AWS:", base64File.slice(0, 50) + "...");
+
+      setExportStep("downloading");
+      setFeedbackMessage("Saving to Local Storage...");
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      const fileName = `id_card_${idCardNo || Date.now()}.pdf`;
       const link = document.createElement("a");
-      link.href = previewUrl;
-      link.download = "id_card.pdf";
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+
+      setExportStep("complete");
+      setFeedbackMessage("PDF saved and ready to use!");
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setExportStep("idle");
+
+    } catch (err) {
+      console.error("Export failed:", err);
+      setExportStep("error");
+      setFeedbackMessage("Export failed.");
+      setTimeout(() => setExportStep("idle"), 3000);
     }
   };
 
@@ -382,8 +425,8 @@ export default function App() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setUserImage(reader.result as string);
-        setImageXOffset(0); // Reset position on new image
-        setImageYOffset(0); // Reset position on new image
+        setImageXOffset(0);
+        setImageYOffset(0);
       };
       reader.readAsDataURL(file);
     }
@@ -394,11 +437,10 @@ export default function App() {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-    setImageXOffset(0); // Reset position
-    setImageYOffset(0); // Reset position
+    setImageXOffset(0);
+    setImageYOffset(0);
   };
 
-  // Drag handlers
   const onDragStart = (e: React.MouseEvent) => {
     setIsDragging(true);
     dragStart.current = {
@@ -412,12 +454,10 @@ export default function App() {
     const newX = e.clientX - dragStart.current.x;
     const newY = e.clientY - dragStart.current.y;
 
-    // Boundary check for movement
-    // These values are based on the CSS container dimensions and a bit of trial and error
-    const maxX = 10; // Max x offset
-    const minX = -10; // Min x offset
-    const maxY = 15; // Max y offset
-    const minY = -15; // Min y offset
+    const maxX = 10;
+    const minX = -10;
+    const maxY = 15;
+    const minY = -15;
 
     const constrainedX = Math.max(minX, Math.min(maxX, newX));
     const constrainedY = Math.max(minY, Math.min(maxY, newY));
@@ -434,7 +474,7 @@ export default function App() {
   const header = (
     <div className="flex justify-between items-center w-full px-8 py-4">
       <div className="flex items-center space-x-4">
-        <h1 className="text-3xl font-extrabold text-white">ID Card Generator</h1>
+        <h1 className="text-3xl font-extrabold text-white animate-glow-pulse">ID Card Generator</h1>
       </div>
       <div className="flex items-center space-x-2">
         <span className="text-sm font-medium text-gray-400">
@@ -455,7 +495,24 @@ export default function App() {
         {`
           .clip-image {
             clip-path: polygon(0% 0%, 100% 0%, 100% 85%, 0% 100%);
-            touch-action: none; /* Prevents default mobile browser actions */
+            touch-action: none;
+          }
+          @keyframes glowing-pulse {
+            0% {
+              filter: drop-shadow(0 0 1px #4A90E2) brightness(100%);
+              transform: scale(1);
+            }
+            50% {
+              filter: drop-shadow(0 0 5px #4A90E2) brightness(120%);
+              transform: scale(1.01);
+            }
+            100% {
+              filter: drop-shadow(0 0 1px #4A90E2) brightness(100%);
+              transform: scale(1);
+            }
+          }
+          .animate-glow-pulse {
+            animation: glowing-pulse 4s ease-in-out infinite;
           }
         `}
       </style>
@@ -564,19 +621,51 @@ export default function App() {
 
             <button
               onClick={handleExport}
-              className="mt-auto w-full bg-gradient-to-r from-[#4A90E2] to-[#BD10E0] 
-                  text-white text-sm font-semibold py-3 rounded-lg 
-                  hover:scale-[1.01] transition-transform shadow-lg 
-                  disabled:opacity-50 disabled:cursor-not-allowed 
-                  transform hover:shadow-2xl hover:brightness-110 
-                  cursor-pointer"
-              disabled={!previewUrl || isLoading}
+              className="w-full bg-gradient-to-r from-[#4A90E2] to-[#BD10E0]
+                        text-white text-sm font-semibold py-3 rounded-lg
+                        hover:scale-[1.01] transition-transform shadow-lg
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                        transform hover:shadow-2xl hover:brightness-110
+                        cursor-pointer relative overflow-hidden flex items-center justify-center gap-2"
+              disabled={
+                !previewUrl || exportStep !== "idle"
+              }
             >
-              {isLoading ? "Generating..." : "Export PDF"}
+              {exportStep === "idle" && "Export PDF"}
+              {exportStep === "uploading" && (
+                <>
+                  <CloudUpload className="h-4 w-4 animate-bounce" />
+                  <span>Uploading to AWS...</span>
+                </>
+              )}
+              {exportStep === "downloading" && (
+                <>
+                  <Download className="h-4 w-4" />
+                  <span>Saving to Local Storage...</span>
+                </>
+              )}
+              {exportStep === "complete" && (
+                <>
+                  <CheckCircle className="h-4 w-4" />
+                  <span>Complete!</span>
+                </>
+              )}
+              {exportStep === "error" && "Export Failed"}
             </button>
+            {feedbackMessage && (
+              <div
+                className={`text-center text-xs font-medium mt-2 py-2 px-4 rounded-lg
+                  ${exportStep === "error"
+                      ? "bg-red-900/50 text-red-300"
+                      : "bg-green-900/50 text-green-300"
+                  }`}
+              >
+                {feedbackMessage}
+              </div>
+            )}
           </div>
           <div className="w-3/4 bg-[#242436] rounded-xl shadow-lg flex items-center justify-center overflow-hidden border border-[#303045] h-full outline outline-white outline-1">
-            {isLoading ? (
+            {exportStep === "exporting" ? (
               <div className="flex flex-col items-center justify-center text-[#8888AA]">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4A90E2]"></div>
                 <p className="mt-4 text-sm">Loading preview...</p>

@@ -3,18 +3,18 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus,
-  LayoutGrid,
-  Box,
-  FileText,
-  HardDrive,
-  TrendingUp,
-  Users,
-  Clock,
-  AlertTriangle,
-  Check,
-  X,
-  Mail, // Change Bug to Mail
+  Plus,
+  LayoutGrid,
+  Box,
+  FileText,
+  HardDrive,
+  TrendingUp,
+  Users,
+  Clock,
+  AlertTriangle,
+  Check,
+  X,
+  Mail, // Change Bug to Mail
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/dashboard/Header";
@@ -137,7 +137,7 @@ const SmallMetricCard = ({
             <p className="text-sm text-gray-600 truncate">{title}</p>
             <p className="text-xs text-gray-500 mt-1">{value.split("|")[1]}</p>
             {/* Progress bar container */}
-             <div className="w-full bg-gray-200 rounded-full h-1.0 mt-2 border border-gray-500">
+            <div className="w-full bg-gray-200 rounded-full h-1.0 mt-2 border border-gray-500">
               {/* Progress bar fill */}
               <div
                 className="bg-green-500 h-1.5 rounded-full transition-all duration-500 ease-out"
@@ -292,6 +292,27 @@ export default function DashboardPage() {
   const [totalMembers, setTotalMembers] = useState<number>(0);
   const [membersList, setMembersList] = useState<MemberData[]>([]);
 
+  // Inside DashboardPage
+  const [exportCount, setExportCount] = useState<number>(0);
+useEffect(() => {
+  if (!user) return;
+  const fetchExportCount = async () => {
+    try {
+      const res = await fetch(`/api/user/exports?userId=${user.id}`);
+      const data = await res.json();
+      if (data.success) setExportCount(data.count);
+      else setExportCount(0);
+    } catch (err) {
+      console.error(err);
+      setExportCount(0);
+    }
+  };
+  fetchExportCount();
+
+  const interval = setInterval(fetchExportCount, 30000); // refresh every 30s
+  return () => clearInterval(interval);
+}, [user]);
+
   const router = useRouter();
 
   // Fetch storage data from the API
@@ -381,7 +402,7 @@ export default function DashboardPage() {
       color: "text-orange-600",
       percentage: parseFloat(storagePercentage), // Add this line
     },
-    { title: "Your Exports", value: "0", icon: <TrendingUp size={20} />, color: "text-cyan-600" },
+    { title: "Your Exports", value: exportCount.toString(), icon: <TrendingUp size={20} />, color: "text-cyan-600" },
     { title: "Total Members", value: totalMembers.toString(), icon: <Users size={20} />, color: "text-yellow-600" },
     { title: "Your Avg. Session", value: "0h", icon: <Clock size={20} />, color: "text-red-600" },
   ];
@@ -406,22 +427,22 @@ export default function DashboardPage() {
   return (
     <main className="flex-1 min-h-screen px-4 sm:px-6 lg:px-12 xl:px-20 transition-all duration-300 bg-transparent text-gray-900">
       {/* Report Bug Button */}
-{/* Report Bug Button */}
-<div className="absolute top-10 right-10 z-50 flex flex-col items-center">
-  <motion.button
-    className="p-3 rounded-full bg-blue-600/90 text-white shadow-lg transition-all duration-300 hover:bg-blue-700/90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-    whileHover={{ scale: 1.1 }}
-    whileTap={{ scale: 0.9 }}
-    onClick={() => alert("Report a bug or give feedback")}
-  >
-    <Mail size={24} />
-  </motion.button>
-  <span className="mt-2 text-xs text-gray-700 dark:text-black-600 text-center whitespace-nowrap">
-    Report a bug <br /> or give feedback for Improvements
-  </span>
-</div>
+      {/* Report Bug Button */}
+      <div className="absolute top-10 right-10 z-50 flex flex-col items-center">
+        <motion.button
+          className="p-3 rounded-full bg-blue-600/90 text-white shadow-lg transition-all duration-300 hover:bg-blue-700/90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => alert("Report a bug or give feedback")}
+        >
+          <Mail size={24} />
+        </motion.button>
+        <span className="mt-2 text-xs text-gray-700 dark:text-black-600 text-center whitespace-nowrap">
+          Report a bug <br /> or give feedback for Improvements
+        </span>
+      </div>
 
-      
+
       <div className="my-4 cursor-pointer hidden lg:block">
         <Header />
       </div>
@@ -464,25 +485,25 @@ export default function DashboardPage() {
           </button>
         </div>
       </section>
-      
-<div className="flex flex-col px-3 sm:px-4 lg:px-6 gap-6">
-  {/* New Templates */}
-  <div className="w-full">
-    <NewTemplates />
-  </div>
 
-  {/* Certificates below NewTemplates */}
-  <div className="w-full mt-2">
-    <Certificates />
-  </div>
+      <div className="flex flex-col px-3 sm:px-4 lg:px-6 gap-6">
+        {/* New Templates */}
+        <div className="w-full">
+          <NewTemplates />
+        </div>
 
-  {/* Visiting Card below both */}
-  <div className="mt-2 w-full">
-    <Visitingcard />
-  </div>
-</div>
+        {/* Certificates below NewTemplates */}
+        <div className="w-full mt-2">
+          <Certificates />
+        </div>
 
-<Footer />
+        {/* Visiting Card below both */}
+        <div className="mt-2 w-full">
+          <Visitingcard />
+        </div>
+      </div>
+
+      <Footer />
 
     </main>
   );

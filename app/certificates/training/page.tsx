@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import fontkit from "@pdf-lib/fontkit";
 import Header from "@/components/dashboard/Header";
-import { Calendar } from "lucide-react"; // ✅ Calendar icon
+import { Calendar, Cloud, Download, Check } from "lucide-react";
 
 interface InputProps {
   label: string;
@@ -49,12 +49,11 @@ export default function Editor() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [hospitalName, setHospitalName] = useState("");
-  const [programName, setProgramName] = useState("Robotics Training Program"); // ✅ Default filled
+  const [programName, setProgramName] = useState("Robotics Training Program");
   const [operationText, setOperationText] = useState(
     "to operate the SSI Mantra Surgical Robotic System"
   );
 
-  // ✅ Format today's date as DD/MM/YYYY
   const formatDate = (date: Date) => {
     const day = String(date.getDate()).padStart(2, "0");
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -62,12 +61,13 @@ export default function Editor() {
     return `${day}/${month}/${year}`;
   };
 
-  const [doi, setDoi] = useState(formatDate(new Date())); // ✅ Defaults to today
-  const [certificateNo, setCertificateNo] = useState(""); // ✅ Added certificate number
+  const [doi, setDoi] = useState(formatDate(new Date()));
+  const [certificateNo, setCertificateNo] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [exportStatus, setExportStatus] = useState<"idle" | "uploading" | "downloading" | "complete" | "error">("idle");
 
-  // ✅ Handle DOI input with auto slash (DD/MM/YYYY)
+
   const handleDoiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "");
     if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
@@ -75,7 +75,6 @@ export default function Editor() {
     setDoi(v);
   };
 
-  // ✅ PDF generation
   useEffect(() => {
     const generatePdf = async () => {
       setIsLoading(true);
@@ -85,13 +84,11 @@ export default function Editor() {
           res.arrayBuffer()
         );
         const pdfDoc = await PDFDocument.load(existingPdfBytes);
-
         pdfDoc.registerFontkit(fontkit);
 
         const pages = pdfDoc.getPages();
         const firstPage = pages[0];
 
-        // ✅ Load Sora Regular & SemiBold
         const soraBytes = await fetch("/fonts/Sora-Regular.ttf").then((res) =>
           res.arrayBuffer()
         );
@@ -104,7 +101,6 @@ export default function Editor() {
 
         let y = firstPage.getHeight() - 180;
         const x = 55;
-
         const cap = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
         const fullName = `${cap(firstName)} ${cap(lastName)}`.trim();
 
@@ -148,13 +144,11 @@ export default function Editor() {
           });
         }
 
-        // ✅ Add DOI at bottom (slightly left + above margin)
         if (doi) {
           const fontSize = 7;
           const margin = 40;
           const textWidth = soraSemiBoldFont.widthOfTextAtSize(doi, fontSize);
           const pageWidth = firstPage.getWidth();
-
           firstPage.drawText(doi, {
             x: Math.max(margin, (pageWidth - textWidth) / 2) - 65,
             y: margin + 37,
@@ -165,23 +159,19 @@ export default function Editor() {
           });
         }
 
-        // ✅ Add Certificate No. at top-right corner
-if (certificateNo) {
-  const fontSize = 7;
-  const margin = 40;
-  const textWidth = soraSemiBoldFont.widthOfTextAtSize(certificateNo, fontSize);
-  const pageWidth = firstPage.getWidth();
-
-  firstPage.drawText(certificateNo, {
-    x: pageWidth - textWidth - margin - 105, // ✅ align right with margin
-    y: margin + 38,                    // ✅ bottom margin
-    size: fontSize,
-    font: soraSemiBoldFont,
-    color: rgb(0, 0, 0),
-  });
-}
-
-
+        if (certificateNo) {
+          const fontSize = 7;
+          const margin = 40;
+          const textWidth = soraSemiBoldFont.widthOfTextAtSize(certificateNo, fontSize);
+          const pageWidth = firstPage.getWidth();
+          firstPage.drawText(certificateNo, {
+            x: pageWidth - textWidth - margin - 105,
+            y: margin + 38,
+            size: fontSize,
+            font: soraSemiBoldFont,
+            color: rgb(0, 0, 0),
+          });
+        }
 
         const pdfBytes = await pdfDoc.save();
         const blob = new Blob([new Uint8Array(pdfBytes)], {
@@ -195,28 +185,78 @@ if (certificateNo) {
         setIsLoading(false);
       }
     };
-
     generatePdf();
-  }, [firstName, lastName, hospitalName, programName, operationText, doi, certificateNo]); 
+  }, [firstName, lastName, hospitalName, programName, operationText, doi, certificateNo]);
 
-  const handleExport = () => {
-    if (previewUrl) {
-      const link = document.createElement("a");
-      link.href = previewUrl;
-      link.download = "certificate.pdf";
-      link.click();
+  const handleExport = async () => {
+    if (!previewUrl) return;
+
+    setExportStatus("uploading");
+    setIsLoading(true);
+
+    try {
+      const res = await fetch(previewUrl);
+      const blob = await res.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      const base64 = btoa(
+        new Uint8Array(arrayBuffer)
+          .reduce((data, byte) => data + String.fromCharCode(byte), "")
+      );
+
+      // Simulate a 2-second upload delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      const uploadFolder = "certificates";
+      const fileName = `${certificateNo || "certificate"}.pdf`;
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileBase64: base64,
+          fileName: fileName,
+          folder: uploadFolder,
+          mimeType: "application/pdf",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.url) {
+        setExportStatus("downloading");
+        
+        // Simulate a 1-second download delay and trigger download
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        setExportStatus("complete");
+        setTimeout(() => setExportStatus("idle"), 2000);
+      } else {
+        throw new Error(data.error || "Upload failed");
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      setExportStatus("error");
+    } finally {
+      setIsLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen w-full bg-[#161719] text-white font-sans flex justify-center items-center p-8 mt-[-32] mb-[-40] ml-12 mr-5">
       <div className="flex flex-col w-full h-full max-w-[1300px]">
-        {/* Header at top center */}
         <div className="w-full flex justify-center mb-8">
           <Header />
         </div>
         <div className="flex w-full max-w-[1300px] h-[90vh] gap-6">
-          {/* Left form */}
           <div className="w-2/5 bg-gray-900 rounded-3xl shadow-2xl p-8 flex flex-col gap-8 border border-gray-700/50 h-full">
             <div className="pb-4 border-b border-gray-700">
               <h2 className="text-3xl font-extrabold text-white tracking-wide">
@@ -235,7 +275,6 @@ if (certificateNo) {
                 placeholder="Enter first name"
                 focusColor="#4A90E2"
               />
-
               <InputComponent
                 label="Last Name"
                 type="text"
@@ -268,8 +307,6 @@ if (certificateNo) {
                 placeholder="Enter operation text"
                 focusColor="#4A90E2"
               />
-
-              {/* ✅ DOI Input */}
               <InputComponent
                 label="DOI (DD/MM/YYYY)"
                 type="text"
@@ -279,8 +316,6 @@ if (certificateNo) {
                 focusColor="#4A90E2"
                 icon={<Calendar size={16} />}
               />
-
-              {/* ✅ Certificate No. Input */}
               <InputComponent
                 label="Certificate No."
                 type="text"
@@ -290,22 +325,53 @@ if (certificateNo) {
                 focusColor="#4A90E2"
               />
             </div>
-
             <button
               onClick={handleExport}
-              className="mt-auto w-full bg-gradient-to-r from-[#4A90E2] to-[#BD10E0] 
-                text-white text-sm font-semibold py-3 rounded-lg 
-                hover:scale-[1.01] transition-transform shadow-lg 
+              className={`
+                mt-auto w-full text-white text-sm font-semibold py-3 rounded-lg 
+                transition-all duration-300
                 disabled:opacity-50 disabled:cursor-not-allowed 
-                transform hover:shadow-2xl hover:brightness-110 
-                cursor-pointer"
-              disabled={!previewUrl || isLoading}
+                transform hover:scale-[1.01] hover:shadow-2xl hover:brightness-110 
+                cursor-pointer
+                ${exportStatus === "uploading" ? "bg-gradient-to-r from-[#FFD700] to-[#FFA500]" :
+                  exportStatus === "downloading" ? "bg-gradient-to-r from-[#4A90E2] to-[#BD10E0]" :
+                  exportStatus === "complete" ? "bg-gradient-to-r from-[#2ECC71] to-[#27AE60]" :
+                  "bg-gradient-to-r from-[#4A90E2] to-[#BD10E0]"
+                }
+              `}
+              disabled={!previewUrl || isLoading || exportStatus === "uploading" || exportStatus === "downloading"}
             >
-              {isLoading ? "Generating..." : "Export PDF"}
+              {(() => {
+                switch (exportStatus) {
+                  case "uploading":
+                    return (
+                      <div className="flex items-center justify-center gap-2">
+                        <Cloud size={16} className="animate-bounce" />
+                        <span>Uploading to AWS...</span>
+                      </div>
+                    );
+                  case "downloading":
+                    return (
+                      <div className="flex items-center justify-center gap-2">
+                        <Download size={16} className="animate-bounce" />
+                        <span>Downloading...</span>
+                      </div>
+                    );
+                  case "complete":
+                    return (
+                      <div className="flex items-center justify-center gap-2">
+                        <Check size={16} />
+                        <span>Export Complete!</span>
+                      </div>
+                    );
+                  case "error":
+                    return "❌ Export Failed";
+                  default:
+                    return isLoading ? "Generating..." : "Export PDF";
+                }
+              })()}
             </button>
           </div>
-
-          {/* Preview */}
           <div className="w-3/4 bg-[#242436] rounded-xl shadow-lg flex items-center justify-center overflow-hidden border border-[#303045] h-full outline outline-white outline-1">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center text-[#8888AA]">
