@@ -206,7 +206,7 @@ export default function App() {
             titleCaseDesignation,
             poppinsMediumFont,
             MAX_DESIGNATION_WIDTH,
-            12
+            10
           );
           const designationWidth = poppinsMediumFont.widthOfTextAtSize(
             titleCaseDesignation,
@@ -218,7 +218,7 @@ export default function App() {
             y: DESIGNATION_Y_POS,
             size: fontSize,
             font: poppinsMediumFont,
-            color: rgb(0, 0, 0),
+            color: rgb(0.2, 0.2, 0.2),
           });
         }
 
