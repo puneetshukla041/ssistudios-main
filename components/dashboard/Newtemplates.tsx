@@ -20,18 +20,20 @@ const Template = () => {
     setIsRedirecting(true);
   };
 
-  // Animate the text and button elements on hover
-  const handleHoverStart = async () => {
-    await titleControls.start({ y: 0, opacity: 1, transition: { duration: 0.5, ease: "easeOut" } });
-    await descriptionControls.start({ y: 0, opacity: 1, transition: { duration: 0.5, ease: "easeOut", delay: 0.1 } });
-    await buttonControls.start({ scale: 1, opacity: 1, transition: { duration: 0.5, ease: "easeOut", delay: 0.2 } });
-  };
 
-  const handleHoverEnd = async () => {
-    await buttonControls.start({ scale: 0.9, opacity: 0, transition: { duration: 0.3, ease: "easeIn" } });
-    await descriptionControls.start({ y: "100%", opacity: 0, transition: { duration: 0.4, ease: "easeIn", delay: 0.1 } });
-    await titleControls.start({ y: "100%", opacity: 0, transition: { duration: 0.4, ease: "easeIn", delay: 0.2 } });
-  };
+// Animate the text and button elements on hover
+const handleHoverStart = async () => {
+  await titleControls.start({ y: 0, opacity: 1, transition: { duration: 0.25, ease: "easeOut" } });
+  await descriptionControls.start({ y: 0, opacity: 1, transition: { duration: 0.25, ease: "easeOut", delay: 0.05 } });
+  await buttonControls.start({ scale: 1, opacity: 1, transition: { duration: 0.25, ease: "easeOut", delay: 0.1 } });
+};
+
+const handleHoverEnd = async () => {
+  await buttonControls.start({ scale: 0.9, opacity: 0, transition: { duration: 0.15, ease: "easeIn" } });
+  await descriptionControls.start({ y: "100%", opacity: 0, transition: { duration: 0.2, ease: "easeIn", delay: 0.05 } });
+  await titleControls.start({ y: "100%", opacity: 0, transition: { duration: 0.2, ease: "easeIn", delay: 0.1 } });
+};
+
 
   useEffect(() => {
     if (isRedirecting) {

@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -24,18 +23,14 @@ import Visitingcard from "@/components/dashboard/visitingcard";
 import Certificates from "@/components/dashboard/certificates";
 import Usernameheader from "@/components/dashboard/usernameheader";
 import { useRouter } from "next/navigation";
-
 import BugReporterCard from "@/components/dashboard/BugReporterCard"; 
-
-
-
+import { useTabUsage } from "@/hooks/useTabUsage";
 // Define the shape of a template object from the database
 interface Template {
   _id: string;
   templateName: string;
   imageUrl: string;
 }
-
 // Define the shape of a member object from the database
 interface MemberData {
   _id: string;
@@ -280,12 +275,23 @@ const VisitingCardDropdown = ({ router }: { router: any }) => {
   );
 };
 
+
+function formatTime(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+  if (seconds < 86400)
+    return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
+  return `${Math.floor(seconds / 86400)}d ${Math.floor((seconds % 86400) / 3600)}h`;
+}
+
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const [newTemplates, setNewTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isBugCardOpen, setIsBugCardOpen] = useState(false);
+  const timeSpent = useTabUsage(); 
 
   // --- MongoDB Progress Bar State & Controls ---
   const [usedStorageKB, setUsedStorageKB] = useState(0);
@@ -372,18 +378,23 @@ export default function DashboardPage() {
   const storagePercentage = ((usedStorageMB / totalStorageMB) * 100).toFixed(1);
 
   // Define metrics with dynamic values
-  const metrics = [
-    {
-      title: "Storage Used",
-      value: `${storagePercentage}% used | ${usedStorageKB > 0 ? `${usedStorageKB}KB` : `${usedStorageMB.toFixed(1)}MB`} / ${totalStorageMB}MB`,
-      icon: <HardDrive size={20} />,
-      color: "text-orange-600",
-      percentage: parseFloat(storagePercentage), // Add this line
-    },
-    { title: "Your Exports", value: exportCount.toString(), icon: <TrendingUp size={20} />, color: "text-cyan-600" },
-    { title: "Total Members", value: totalMembers.toString(), icon: <Users size={20} />, color: "text-yellow-600" },
-    { title: "Your Avg. Session", value: "0h", icon: <Clock size={20} />, color: "text-red-600" },
-  ];
+const metrics = [
+  {
+    title: "Storage Used",
+    value: `${storagePercentage}% used | ${
+      usedStorageKB > 0 ? `${usedStorageKB}KB` : `${usedStorageMB.toFixed(1)}MB`
+    } / ${totalStorageMB}MB`,
+    icon: <HardDrive size={20} />,
+    color: "text-orange-600",
+    percentage: parseFloat(storagePercentage),
+  },
+  { title: "Your Exports", value: exportCount.toString(), icon: <TrendingUp size={20} />, color: "text-cyan-600" },
+  { title: "Total Members", value: totalMembers.toString(), icon: <Users size={20} />, color: "text-yellow-600" },
+
+  // 🔥 Replace the static "0h" with real session time
+    { title: "Your Avg. Session", value: timeSpent, icon: <Clock size={20} />, color: "text-red-600" },
+];
+
 
   useEffect(() => {
     async function fetchTemplates() {

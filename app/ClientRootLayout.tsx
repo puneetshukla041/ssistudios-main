@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider, useTheme, CherryBlossomBackground } from "@/contexts/ThemeContext";
 import { ReactNode, useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { UsageProvider } from "@/contexts/UsageContext"; // ✅ SSI-only usage
 
 // --- Animated Hamburger Icon ---
 type MotionLineProps = React.ComponentPropsWithoutRef<"line"> & { variants?: any; [key: string]: any };
@@ -68,12 +69,10 @@ function AppLayout({ children }: { children: ReactNode }) {
     };
   }, [isSidebarOpen]);
 
-  // Background classes
-// Background classes
-const themeBg =
-  theme === "light"
-    ? "bg-white text-gray-900"
-    : "relative overflow-hidden text-gray-900"; // Blossom
+  const themeBg =
+    theme === "light"
+      ? "bg-white text-gray-900"
+      : "relative overflow-hidden text-gray-900"; // Blossom
 
   if (isEditorPage) return <>{children}</>;
 
@@ -81,7 +80,7 @@ const themeBg =
 
   return (
     <>
-      <CherryBlossomBackground /> {/* ✅ Render petals globally */}
+      <CherryBlossomBackground />
       {!isLoginPage ? (
         <div className={`flex relative z-10 min-h-screen ${themeBg}`}>
           <Sidebar forceActive={forceActive} isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
@@ -121,7 +120,10 @@ export default function ClientRootLayout({ children }: { children: ReactNode }) 
   return (
     <AuthProvider>
       <ThemeProvider>
-        <AppLayout>{children}</AppLayout>
+        {/* ✅ Wrap with UsageProvider, SSI-only logic is inside UsageProvider */}
+        <UsageProvider>
+          <AppLayout>{children}</AppLayout>
+        </UsageProvider>
       </ThemeProvider>
     </AuthProvider>
   );
