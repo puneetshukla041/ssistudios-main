@@ -307,6 +307,11 @@ export default function LoginPage() {
             project management, user analytics, and system configurations.
           </motion.p>
 
+
+
+
+
+
           <motion.button
             className="mt-6 flex items-center px-4 py-2 text-sm font-semibold text-blue-300 border border-blue-400/40 rounded-full
                           hover:text-white hover:bg-blue-500/20 transition-all duration-300 backdrop-blur-sm cursor-pointer"
@@ -404,6 +409,9 @@ export default function LoginPage() {
                   <EyeIcon className="w-6 h-6" />
                 )}
               </motion.button>
+
+
+              
             </motion.div>
 
             <motion.button
@@ -443,6 +451,12 @@ export default function LoginPage() {
               </AnimatePresence>
             </motion.button>
           </form>
+
+            {/* NEW: SSI Maya Product line */}
+  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-gray-400 text-xs italic opacity-80">
+    A SSI Maya Application
+  </div>
+
         </motion.div>
       </div>
 

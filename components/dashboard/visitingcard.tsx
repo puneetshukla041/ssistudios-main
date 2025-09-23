@@ -52,7 +52,7 @@ const App = () => {
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="text-lg sm:text-xl font-semibold text-gray-700 mb-6 pl-4 tracking-normal"
       >
-        Visiting Card Library
+       
       </motion.h2>
 
       {/* Cards Row */}

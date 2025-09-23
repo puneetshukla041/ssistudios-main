@@ -396,39 +396,24 @@ const metrics = [
 ];
 
 
-  useEffect(() => {
-    async function fetchTemplates() {
-      try {
-        const response = await fetch("/api/templates");
-        if (!response.ok) throw new Error("Templates fetch failed");
-        const data = await response.json();
-        setNewTemplates(data.data);
-      } catch (err: any) {
-        setError(err.message);
-        console.error("Failed to fetch templates:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchTemplates();
-  }, []);
 
   return (
     <main className="flex-1 min-h-screen px-4 sm:px-6 lg:px-12 xl:px-20 transition-all duration-300 bg-transparent text-gray-900">
-      {/* Report Bug Button */}
-      <div className="absolute top-10 right-10 z-50 flex flex-col items-center">
-        <motion.button
-          className="p-3 rounded-full bg-blue-600/90 text-white shadow-lg transition-all duration-300 hover:bg-blue-700/90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setIsBugCardOpen(true)} // Open the card on click
-        >
-          <Mail size={24} />
-        </motion.button>
-        <span className="mt-2 text-xs text-gray-700 dark:text-black-600 text-center whitespace-nowrap">
-          Report a bug <br /> or give feedback for Improvements
-        </span>
-      </div>
+{/* Report Bug Button */}
+<div className="absolute top-10 right-10 z-50 flex flex-col items-center">
+  <motion.button
+    className="p-3 rounded-full bg-blue-600/90 text-white shadow-lg transition-all duration-300 hover:bg-blue-700/90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+    whileHover={{ scale: 1.1 }}
+    whileTap={{ scale: 0.9 }}
+    onClick={() => setIsBugCardOpen(true)} // Open the card on click
+  >
+    <Mail size={24} />
+  </motion.button>
+  <span className="mt-2 text-xs text-gray-700 dark:text-black-600 text-center whitespace-nowrap">
+    Report a bug <br /> or give feedback for Improvements
+  </span>
+</div>
+
 
       <div className="my-4 cursor-pointer hidden lg:block">
         <Header />
@@ -472,23 +457,28 @@ const metrics = [
           </button>
         </div>
       </section>
+ <h2 className="text-xl sm:text-2xl font-semibold mb-6">Templates Library</h2>
 
-      <div className="flex flex-col px-3 sm:px-4 lg:px-6 gap-6">
-        {/* New Templates */}
-        <div className="w-full">
-          <NewTemplates />
-        </div>
 
-        {/* Certificates below NewTemplates */}
-        <div className="w-full mt-2">
-          <Certificates />
-        </div>
+<div className="flex flex-col lg:flex-row px-3 sm:px-4 lg:px-6 gap-6">
+  {/* Left Column: New Templates + Certificates */}
+  <div className="flex-shrink-0 min-w-[600px] flex flex-col gap-6">
+    <div className="w-full">
+      <NewTemplates />
+    </div>
 
-        {/* Visiting Card below both */}
-        <div className="mt-2 w-full">
-          <Visitingcard />
-        </div>
-      </div>
+    <div className="w-full">
+      <Certificates />
+    </div>
+  </div>
+
+  {/* Right Column: Visiting Card */}
+  <div className="flex-shrink-0 w-full lg:w-[850px] mt-2 lg:mt-[-10]">
+    <Visitingcard />
+  </div>
+</div>
+
+
 
       <Footer />
 
