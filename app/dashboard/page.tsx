@@ -25,6 +25,7 @@ import Certificates from "@/components/dashboard/certificates";
 import Usernameheader from "@/components/dashboard/usernameheader";
 import { useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
+import BugReporterCard from "@/components/dashboard/BugReporterCard"; 
 
 let socket: Socket;
 
@@ -284,6 +285,7 @@ export default function DashboardPage() {
   const [newTemplates, setNewTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isBugCardOpen, setIsBugCardOpen] = useState(false);
 
   // --- MongoDB Progress Bar State & Controls ---
   const [usedStorageKB, setUsedStorageKB] = useState(0);
@@ -294,24 +296,24 @@ export default function DashboardPage() {
 
   // Inside DashboardPage
   const [exportCount, setExportCount] = useState<number>(0);
-useEffect(() => {
-  if (!user) return;
-  const fetchExportCount = async () => {
-    try {
-      const res = await fetch(`/api/user/exports?userId=${user.id}`);
-      const data = await res.json();
-      if (data.success) setExportCount(data.count);
-      else setExportCount(0);
-    } catch (err) {
-      console.error(err);
-      setExportCount(0);
-    }
-  };
-  fetchExportCount();
+  useEffect(() => {
+    if (!user) return;
+    const fetchExportCount = async () => {
+      try {
+        const res = await fetch(`/api/user/exports?userId=${user.id}`);
+        const data = await res.json();
+        if (data.success) setExportCount(data.count);
+        else setExportCount(0);
+      } catch (err) {
+        console.error(err);
+        setExportCount(0);
+      }
+    };
+    fetchExportCount();
 
-  const interval = setInterval(fetchExportCount, 30000); // refresh every 30s
-  return () => clearInterval(interval);
-}, [user]);
+    const interval = setInterval(fetchExportCount, 30000); // refresh every 30s
+    return () => clearInterval(interval);
+  }, [user]);
 
   const router = useRouter();
 
@@ -427,13 +429,12 @@ useEffect(() => {
   return (
     <main className="flex-1 min-h-screen px-4 sm:px-6 lg:px-12 xl:px-20 transition-all duration-300 bg-transparent text-gray-900">
       {/* Report Bug Button */}
-      {/* Report Bug Button */}
       <div className="absolute top-10 right-10 z-50 flex flex-col items-center">
         <motion.button
           className="p-3 rounded-full bg-blue-600/90 text-white shadow-lg transition-all duration-300 hover:bg-blue-700/90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          onClick={() => alert("Report a bug or give feedback")}
+          onClick={() => setIsBugCardOpen(true)} // Open the card on click
         >
           <Mail size={24} />
         </motion.button>
@@ -441,7 +442,6 @@ useEffect(() => {
           Report a bug <br /> or give feedback for Improvements
         </span>
       </div>
-
 
       <div className="my-4 cursor-pointer hidden lg:block">
         <Header />
@@ -505,6 +505,15 @@ useEffect(() => {
 
       <Footer />
 
+      {/* Bug Reporter Card */}
+      {user && ( // Only render if a user is logged in
+        <BugReporterCard
+          isOpen={isBugCardOpen}
+          onClose={() => setIsBugCardOpen(false)}
+          userId={user.id}
+          username={user.username} // Pass the username to the component
+        />
+      )}
     </main>
   );
 }

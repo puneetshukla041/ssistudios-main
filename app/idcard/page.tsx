@@ -204,25 +204,26 @@ export default function App() {
 
         if (designation) {
           const titleCaseDesignation = toTitleCase(designation);
-          const MAX_DESIGNATION_WIDTH = pageWidth * 0.7;
-          const fontSize = getDynamicFontSize(
-            titleCaseDesignation,
-            poppinsMediumFont,
-            MAX_DESIGNATION_WIDTH,
-            10
-          );
-          const designationWidth = poppinsMediumFont.widthOfTextAtSize(
-            titleCaseDesignation,
-            fontSize
-          );
-          const x = pageWidth / 2 - designationWidth / 2;
-          secondPage.drawText(titleCaseDesignation, {
-            x,
-            y: DESIGNATION_Y_POS,
-            size: fontSize,
-            font: poppinsMediumFont,
-            color: rgb(0.2, 0.2, 0.2),
-          });
+const MAX_DESIGNATION_WIDTH = pageWidth * 0.7;
+const fontSize = getDynamicFontSize(
+  titleCaseDesignation,
+  poppinsMediumFont,
+  MAX_DESIGNATION_WIDTH,
+  9 // smaller than 10
+);
+const designationWidth = poppinsMediumFont.widthOfTextAtSize(
+  titleCaseDesignation,
+  fontSize
+);
+const x = pageWidth / 2 - designationWidth / 2;
+secondPage.drawText(titleCaseDesignation, {
+  x,
+  y: DESIGNATION_Y_POS,
+  size: fontSize,
+  font: poppinsMediumFont,
+  color: rgb(0.4, 0.4, 0.4), // lighter black
+});
+
         }
 
         if (idCardNo) {
