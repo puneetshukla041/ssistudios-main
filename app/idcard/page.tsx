@@ -573,26 +573,31 @@ secondPage.drawText(titleCaseDesignation, {
                 </label>
                 <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-700 rounded-lg p-6 mt-6 hover:border-gray-500 transition-colors cursor-pointer">
                   {userImage ? (
-                    <div
-                      className="relative w-20 h-32 rounded-lg overflow-hidden border border-gray-600 group clip-image"
-                      onMouseDown={onDragStart}
-                      style={{
-                        transform: `translate(${imageXOffset}px, ${imageYOffset}px)`,
-                        cursor: "grab",
-                      }}
-                    >
-                      <img
-                        src={userImage}
-                        alt="User"
-                        className="w-full h-full object-cover"
-                      />
-                      <button
-                        onClick={resetImage}
-                        className="absolute top-1 right-1 bg-gray-900 rounded-full p-0.5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <XCircle size={20} />
-                      </button>
-                    </div>
+
+
+
+
+<div
+  className="relative w-28 aspect-[3/4] rounded-lg overflow-hidden border border-gray-600 group clip-image"
+  onMouseDown={onDragStart}
+  style={{
+    transform: `translate(${imageXOffset}px, ${imageYOffset}px)`,
+    cursor: "grab",
+  }}
+>
+  <img
+    src={userImage}
+    alt="User"
+    className="w-full h-full object-contain"
+  />
+  <button
+    onClick={resetImage}
+    className="absolute top-1 right-1 bg-gray-900 rounded-full p-0.5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"
+  >
+    <XCircle size={20} />
+  </button>
+</div>
+
                   ) : (
                     <>
                       <input
