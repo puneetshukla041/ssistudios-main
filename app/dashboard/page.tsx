@@ -24,10 +24,10 @@ import Visitingcard from "@/components/dashboard/visitingcard";
 import Certificates from "@/components/dashboard/certificates";
 import Usernameheader from "@/components/dashboard/usernameheader";
 import { useRouter } from "next/navigation";
-import { io, Socket } from "socket.io-client";
+
 import BugReporterCard from "@/components/dashboard/BugReporterCard"; 
 
-let socket: Socket;
+
 
 // Define the shape of a template object from the database
 interface Template {
@@ -367,30 +367,6 @@ export default function DashboardPage() {
   }, [fetchStorageData, fetchMembersList]);
 
   // New socket code
-  useEffect(() => {
-    // Initialize socket connection
-    socket = io({
-      path: "/api/socketio",
-    });
-
-    if (user) {
-      socket.emit("join", user.id); // Mark yourself online
-    }
-
-    // On tab close → mark offline
-    const handleBeforeUnload = () => {
-      if (user) socket.emit("leave", user.id);
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      if (user) socket.emit("leave", user.id);
-      socket.disconnect();
-    };
-  }, [user]);
-
   // Determine the display value for storage
   const storageDisplayValue = usedStorageMB < 1 ? `${usedStorageKB.toFixed(1)}KB` : `${usedStorageMB.toFixed(1)}MB`;
   const storagePercentage = ((usedStorageMB / totalStorageMB) * 100).toFixed(1);
