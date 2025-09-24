@@ -175,8 +175,8 @@ export default function App() {
           return fontSize;
         };
 
-        const FULL_NAME_Y_POS = 50;
-        const DESIGNATION_Y_POS = 38;
+        const FULL_NAME_Y_POS = 65;
+        const DESIGNATION_Y_POS = 53;
         const ID_CARD_NO_Y_POS = 16;
 
         if (fullName) {
@@ -209,7 +209,7 @@ const fontSize = getDynamicFontSize(
   titleCaseDesignation,
   poppinsMediumFont,
   MAX_DESIGNATION_WIDTH,
-  9 // smaller than 10
+  8 // smaller than 10
 );
 const designationWidth = poppinsMediumFont.widthOfTextAtSize(
   titleCaseDesignation,
