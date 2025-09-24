@@ -304,46 +304,47 @@ secondPage.drawText(titleCaseDesignation, {
             }
 
             if (image) {
-              const photoWidth = 80;
+              const photoWidth = 94;
               const photoHeight = 126;
               const xPos = pageWidth / 2 - photoWidth / 2 + imageXOffset;
               const yPos = 89 + imageYOffset;
               const slopeHeight = 47;
 
-              const img = new Image();
-              img.src = userImage;
-              await new Promise((resolve) => (img.onload = resolve));
+const img = new Image();
+img.src = userImage;
+await new Promise((resolve) => (img.onload = resolve));
 
-              const scale = 3;
-              const canvas = document.createElement("canvas");
-              canvas.width = photoWidth * scale;
-              canvas.height = photoHeight * scale;
-              const ctx = canvas.getContext("2d")!;
+const scale = 3;
+const canvas = document.createElement("canvas");
+canvas.width = photoWidth * scale;
+canvas.height = photoHeight * scale;
+const ctx = canvas.getContext("2d")!;
 
-              ctx.scale(scale, scale);
-              ctx.beginPath();
-              ctx.moveTo(0, 0);
-              ctx.lineTo(photoWidth, 0);
-              ctx.lineTo(photoWidth, photoHeight - slopeHeight);
-              ctx.lineTo(0, photoHeight);
-              ctx.closePath();
-              ctx.clip();
+ctx.scale(scale, scale);
+ctx.beginPath();
+ctx.moveTo(0, 0);
+ctx.lineTo(photoWidth, 0);
+ctx.lineTo(photoWidth, photoHeight - slopeHeight);
+ctx.lineTo(0, photoHeight);
+ctx.closePath();
+ctx.clip();
 
-              ctx.drawImage(img, 0, 0, photoWidth, photoHeight);
+ctx.drawImage(img, 0, 0, photoWidth, photoHeight);
 
-              const clippedDataUrl = canvas.toDataURL("image/png");
+const clippedDataUrl = canvas.toDataURL("image/png");
 
-              const clippedBytes = await fetch(clippedDataUrl).then((res) =>
-                res.arrayBuffer()
-              );
-              const finalImage = await pdfDoc.embedPng(clippedBytes);
+const clippedBytes = await fetch(clippedDataUrl).then((res) =>
+  res.arrayBuffer()
+);
+const finalImage = await pdfDoc.embedPng(clippedBytes);
 
-              secondPage.drawImage(finalImage, {
-                x: xPos,
-                y: yPos,
-                width: photoWidth,
-                height: photoHeight,
-              });
+secondPage.drawImage(finalImage, {
+  x: xPos,
+  y: yPos,
+  width: photoWidth,
+  height: photoHeight,
+});
+
             }
           } catch (e) {
             console.error("Failed to embed sloped user image:", e);
@@ -588,7 +589,8 @@ secondPage.drawText(titleCaseDesignation, {
   <img
     src={userImage}
     alt="User"
-    className="w-full h-full object-contain"
+    className="w-full h-full object-contain" // ← keep this
+    style={{ objectFit: "contain" }} // ensure aspect ratio
   />
   <button
     onClick={resetImage}
@@ -597,6 +599,8 @@ secondPage.drawText(titleCaseDesignation, {
     <XCircle size={20} />
   </button>
 </div>
+
+
 
                   ) : (
                     <>
