@@ -307,8 +307,8 @@ secondPage.drawText(titleCaseDesignation, {
               const photoWidth = 94;
               const photoHeight = 126;
               const xPos = pageWidth / 2 - photoWidth / 2 + imageXOffset;
-              const yPos = 89 + imageYOffset;
-              const slopeHeight = 47;
+              const yPos = 85 + imageYOffset;
+              const slopeHeight = 55;
 
 const img = new Image();
 img.src = userImage;
