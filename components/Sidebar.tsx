@@ -52,7 +52,7 @@ const menu: MenuItem[] = [
   {
     name: 'Image Enhancer',
     icon: Star,
-    path: '/image-enhancer',
+    path: '/imageenhancer',
     requiredAccess: 'imageEnhancer',
   },
   {

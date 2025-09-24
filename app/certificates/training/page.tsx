@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import fontkit from "@pdf-lib/fontkit";
 import Header from "@/components/dashboard/Header";
 import { Calendar, Cloud, Download, Check } from "lucide-react";
-
 interface InputProps {
   label: string;
   type: string;
@@ -13,7 +12,6 @@ interface InputProps {
   focusColor: string;
   icon?: React.ReactNode;
 }
-
 const InputComponent: React.FC<InputProps> = ({
   label,
   type,
@@ -44,7 +42,6 @@ const InputComponent: React.FC<InputProps> = ({
     </div>
   </div>
 );
-
 export default function Editor() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");

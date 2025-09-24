@@ -473,7 +473,7 @@ const metrics = [
   </div>
 
   {/* Right Column: Visiting Card */}
-  <div className="flex-shrink-0 w-full lg:w-[850px] mt-2 lg:mt-[-10]">
+  <div className="flex-shrink-0 w-full lg:w-[880px] mt-2 lg:mt-[-10]">
     <Visitingcard />
   </div>
 </div>
